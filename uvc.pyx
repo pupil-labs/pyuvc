@@ -257,7 +257,10 @@ cdef class Frame:
         self._yuv_converted = False
 
 
-
+def init():
+    cdef uvc.uvc_context_t * ctx
+    print uvc.uvc_init(&ctx,NULL)
+    uvc.uvc_exit(ctx)
 
 
 #cdef class Capture:
