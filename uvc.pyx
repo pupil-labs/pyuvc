@@ -77,9 +77,6 @@ cdef class Frame:
 
 
     property yuv422_buffer:
-        def __set__(self,buffer_handle buffer):
-            raise Exception('Read only')
-
         def __get__(self):
             #retuns buffer handle to yuv422 buffer
             if self._yuv_converted == False:
@@ -96,8 +93,6 @@ cdef class Frame:
 
 
     property yuv:
-        def __set__(self,val):
-            raise Exception('read only')
         def __get__(self):
             '''
             planar YUV420 returned in 3 numpy arrays:
@@ -141,8 +136,6 @@ cdef class Frame:
             return Y,U,V
 
     property gray:
-        def __set__(self,val):
-            raise Exception('read only')
         def __get__(self):
             # return gray aka luminace plane of YUV image.
             if self._yuv_converted is False:
@@ -157,8 +150,6 @@ cdef class Frame:
 
 
     property bgr:
-        def __set__(self,val):
-            raise Exception('read only')
         def __get__(self):
             if self._bgr_converted is False:
                 #toggle conversion if needed
@@ -172,8 +163,6 @@ cdef class Frame:
 
     #for legacy reasons.
     property img:
-        def __set__(self,val):
-            raise Exception('read only')
         def __get__(self):
             return self.bgr
 
@@ -257,10 +246,54 @@ cdef class Frame:
         self._yuv_converted = False
 
 
-def init():
+def test():
     cdef uvc.uvc_context_t * ctx
     print uvc.uvc_init(&ctx,NULL)
     uvc.uvc_exit(ctx)
+
+def device_list():
+    cdef uvc.uvc_context_t * ctx
+    cdef int ret = uvc.uvc_init(&ctx,NULL)
+    if ret !=uvc.UVC_SUCCESS:
+        logger.error("could not initialize")
+        return
+
+    cdef uvc.uvc_device_t ** dev_list
+    cdef uvc.uvc_device_t * dev
+    cdef uvc.uvc_device_descriptor_t *desc
+
+    ret = uvc.uvc_get_device_list(ctx,&dev_list)
+    if ret !=uvc.UVC_SUCCESS:
+        logger.error("could not get devices list.")
+        return
+
+    devices = []
+    cdef int idx = 0
+    while True:
+        dev = dev_list[idx]
+        if dev == NULL:
+            break
+        if (uvc.uvc_get_device_descriptor(dev, &desc) == uvc.UVC_SUCCESS):
+            product = desc.product or "unknown name"
+            manufacturer = desc.manufacturer or "unknown manufacturer"
+            serialNumber = desc.serialNumber or "unknown serial number"
+            idProduct,idVendor = desc.idProduct,desc.idVendor
+            device_address = uvc.uvc_get_device_address(dev)
+            bus_number = uvc.uvc_get_bus_number(dev)
+            devices.append({'name':product,
+                            'manufacturer':manufacturer,
+                            'serialNumber':serialNumber,
+                            'idProduct':idProduct,
+                            'idVendor':idVendor,
+                            'device_address':device_address,
+                            'bus_number':bus_number})
+
+        uvc.uvc_free_device_descriptor(desc)
+        idx +=1
+
+    uvc.uvc_free_device_list(dev_list, 1)
+    uvc.uvc_exit(ctx)
+    return devices
 
 
 #cdef class Capture:
