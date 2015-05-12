@@ -1,17 +1,28 @@
 import cython
-from posix cimport fcntl,unistd, stat, time
-from posix.ioctl cimport ioctl
-from libc.errno cimport errno,EINTR,EINVAL,EAGAIN,EIO,ERANGE
-from libc.string cimport strerror
-cimport cmman as mman
-cimport cselect as select
 cimport cuvc as uvc
 cimport cturbojpeg as turbojpeg
 cimport numpy as np
 import numpy as np
 
 
-from os import listdir as oslistdir
+uvc_error_codes = {  0:"Success (no error)",
+                    -1:"Input/output error.",
+                    -2:"Invalid parameter.",
+                    -3:"Access denied.",
+                    -4:"No such device.",
+                    -5:"Entity not found.",
+                    -6:"Resource busy.",
+                    -7:"Operation timed out.",
+                    -8:"Overflow.",
+                    -9:"Pipe error.",
+                    -10:"System call interrupted.",
+                    -11:"Insufficient memory.     ",
+                    -12:"Operation not supported.",
+                    -50:"Device is not UVC-compliant.",
+                    -51:"Mode not supported.",
+                    -52:"Resource has a callback (can't use polling and async)",
+                    -99:"Undefined error."}
+
 
 
 #logging
@@ -166,8 +177,6 @@ cdef class Frame:
         def __get__(self):
             return self.bgr
 
-
-
     cdef yuv2bgr(self):
         #2.75 ms at 1080p
         cdef int channels = 3
@@ -178,7 +187,6 @@ cdef class Frame:
         if result == -1:
             logger.error('Turbojpeg yuv2bgr error: %s'%turbojpeg.tjGetErrorStr() )
         self._bgr_converted = True
-
 
 
     cdef jpeg2yuv(self):
@@ -209,37 +217,6 @@ cdef class Frame:
         self.yuv_subsampling = jpegSubsamp
         self._yuv_converted = True
 
-    # cdef jpeg2bgr(self):
-    #     #10.66ms on 1080p
-    #     cdef int channels = 3
-    #     cdef int jpegSubsamp, j_width,j_height
-    #     cdef int result
-    #     cdef np.ndarray[np.uint8_t, ndim=1] bgr_array = np.empty(self.width*self.height*channels, dtype=np.uint8)
-    #     turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>self._jpeg_buffer.start, self._jpeg_buffer.length, &j_width, &j_height, &jpegSubsamp)
-    #     result = turbojpeg.tjDecompress2(self.tj_context, <unsigned char *>self._jpeg_buffer.start, self._jpeg_buffer.length,
-    #                             <unsigned char *> bgr_array.data,
-    #                             j_width, 0, j_height, turbojpeg.TJPF_BGR, 0)#turbojpeg.TJFLAG_FASTDCT
-    #     if result == -1:
-    #         logger.error('Turbojpeg jpeg2bgr error: %s'%turbojpeg.tjGetErrorStr() )
-    #     self._bgr_array = bgr_array
-    #     self._bgr_array.shape = self.height,self.width,channels
-
-
-    # cdef jpeg2gray(self):
-    #     #6.02ms on 1080p
-    #     cdef int channels = 1
-    #     cdef int jpegSubsamp, j_width,j_height
-    #     cdef int result
-    #     cdef np.ndarray[np.uint8_t, ndim=1] array = np.empty(self.width*self.height*channels, dtype=np.uint8)
-    #     turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>self._jpeg_buffer.start, self._jpeg_buffer.length, &j_width, &j_height, &jpegSubsamp)
-    #     result = turbojpeg.tjDecompress2(self.tj_context, <unsigned char *>self._jpeg_buffer.start, self._jpeg_buffer.length,
-    #                             <unsigned char *> array.data,
-    #                             j_width, 0, j_height, turbojpeg.TJPF_GRAY, 0)#turbojpeg.TJFLAG_FASTDCT
-
-    #     if result == -1:
-    #         logger.error('Turbojpeg jpeg2gray error: %s'%turbojpeg.tjGetErrorStr() )
-    #     self._gray_array = array
-    #     self._gray_array.shape = self.height,self.width
 
     def clear_caches(self):
         self._bgr_converted = False
@@ -274,9 +251,9 @@ def device_list():
         if dev == NULL:
             break
         if (uvc.uvc_get_device_descriptor(dev, &desc) == uvc.UVC_SUCCESS):
-            product = desc.product or "unknown name"
-            manufacturer = desc.manufacturer or "unknown manufacturer"
-            serialNumber = desc.serialNumber or "unknown serial number"
+            product = desc.product or "unknown"
+            manufacturer = desc.manufacturer or "unknown"
+            serialNumber = desc.serialNumber or "unknown"
             idProduct,idVendor = desc.idProduct,desc.idVendor
             device_address = uvc.uvc_get_device_address(dev)
             bus_number = uvc.uvc_get_bus_number(dev)
@@ -286,7 +263,8 @@ def device_list():
                             'idProduct':idProduct,
                             'idVendor':idVendor,
                             'device_address':device_address,
-                            'bus_number':bus_number})
+                            'bus_number':bus_number,
+                            'uid':'%s:%s'%(bus_number,device_address)})
 
         uvc.uvc_free_device_descriptor(desc)
         idx +=1
@@ -296,153 +274,172 @@ def device_list():
     return devices
 
 
-#cdef class Capture:
-#    """
-#    Video Capture class.
-#    A Class giving access to a capture devices using the v4l2 provides drivers and userspace API.
-#    The intent is to always grab mjpeg frames and give access to theses buffer using the Frame class.
+cdef class Capture:
+    """
+    Video Capture class.
+    A Class giving access to a capture UVC devices.
+    The intent is to grab mjpeg frames and give access to the buffer using the Frame class.
 
-#    All controls are exposed and can be enumerated using the controls list.
-#    """
-#    cdef int dev_handle
-#    cdef bytes dev_name
-#    cdef bint _camera_streaming, _buffers_initialized
-#    cdef object _transport_formats, _frame_rates,_frame_sizes
-#    cdef object  _frame_rate, _frame_size # (rate_num,rate_den), (width,height)
-#    cdef v4l2.__u32 _transport_format
+    All controls are exposed and can be enumerated using the controls list.
+    """
 
-#    cdef bint _buffer_active
-#    cdef int _allocated_buf_n
-#    cdef v4l2.v4l2_buffer _active_buffer
-#    cdef list buffers
+    cdef turbojpeg.tjhandle tj_context
 
-#    cdef turbojpeg.tjhandle tj_context
+    cdef uvc.uvc_context_t *ctx
+    cdef uvc.uvc_device_t *dev
+    cdef uvc.uvc_device_handle_t *devh
+    cdef uvc.uvc_stream_ctrl_t ctrl
+    cdef bint _stream_on
+    cdef uvc.uvc_stream_handle_t *strmh
+    cdef uvc.uvc_frame *uvc_frame
 
-#    def __cinit__(self,dev_name):
-#        pass
+    def __cinit__(self,dev_uid):
+        self.dev = NULL
+        self.ctx = NULL
+        self.devh = NULL
+        self._stream_on = 0
+        self.strmh = NULL
+        self.uvc_frame = NULL
 
-#    def __init__(self,dev_name):
-#        self.dev_name = dev_name
-#        self.dev_handle = self.open_device()
-#        self.verify_device()
-#        self.get_format()
-#        self.get_streamparm()
+    def __init__(self,dev_uid):
 
-#        self._transport_formats = None
-#        self._frame_rates = None
-#        self._frame_sizes = None
+        #setup for jpeg converter
+        self.tj_context = turbojpeg.tjInitDecompress()
 
-#        self._buffer_active = False
-#        self._allocated_buf_n = 0
+        if uvc.uvc_init(&self.ctx, NULL) != uvc.UVC_SUCCESS:
+            raise Exception('Could not init libuvc')
 
-#        self._buffers_initialized = False
-#        self._camera_streaming = False
-
-#        #setup for jpeg converter
-#        self.tj_context = turbojpeg.tjInitDecompress()
-
-#        #set some sane defaults:
-#        self.transport_format = 'MJPG'
-
-#    def restart(self):
-#        self.close()
-#        self.dev_handle = self.open_device()
-#        self.verify_device()
-#        self.transport_format = 'MJPG' #this will set prev parms
-#        logger.warning("restarted capture device")
+        self._init_device(dev_uid)
 
 
-#    def close(self):
-#        try:
-#            self.stop()
-#            self.deinit_buffers()
-#            self.close_device()
-#        except:
-#            logger.warning("Could not shut down Capture properly.")
 
-#    def __dealloc__(self):
-#        turbojpeg.tjDestroy(self.tj_context)
+    cdef _init_device(self,dev_uid):
 
-#        if self.dev_handle != -1:
-#            self.close()
+        ##first we find the appropriate dev handle
+        cdef uvc.uvc_device_t ** dev_list
+        cdef uvc.uvc_device_descriptor_t *desc
+        cdef int idx = 0
+        cdef int error
+        if uvc.uvc_get_device_list(self.ctx,&dev_list) !=uvc.UVC_SUCCESS:
+            uvc.uvc_exit(self.ctx)
+            raise Exception("could not get devices list.")
 
-#    def get_info(self):
-#        cdef v4l2.v4l2_capability caps
-#        if self.xioctl(v4l2.VIDIOC_QUERYCAP,&caps) !=0:
-#            raise Exception("VIDIOC_QUERYCAP error. Could not get devices info.")
+        while True:
+            dev = dev_list[idx]
+            if dev == NULL:
+                break
+            device_address = uvc.uvc_get_device_address(dev)
+            bus_number = uvc.uvc_get_bus_number(dev)
+            if dev_uid == '%s:%s'%(bus_number,device_address):
+                logger.debug("Found device that mached uid:'%s'"%dev_uid)
+                uvc.uvc_ref_device(dev)
+                break
+            idx +=1
 
-#        return  {'dev_path':self.dev_name,'driver':caps.driver,'dev_name':caps.card,'bus_info':caps.bus_info}
-
-#    def get_frame_robust(self, int attemps = 6):
-#        for a in range(attemps)[::-1]:
-#            try:
-#                frame = self.get_frame()
-#            except:
-#                logger.warning('Could not get Frame on "%s". Trying %s more times.'%(self.dev_name,a))
-#                self.restart()
-#            else:
-#                return frame
-#        raise Exception("Could not grab frame from %s"%self.dev_name)
-
-#    def get_frame(self):
-#        cdef int j_width,j_height,jpegSubsamp,header_ok
-#        if not self._camera_streaming:
-#            self.init_buffers()
-#            self.start()
-
-#        if self._buffer_active:
-#            if self.xioctl(v4l2.VIDIOC_QBUF,&self._active_buffer) == -1:
-#                raise Exception("Could not queue buffer")
-#            else:
-#                self._buffer_active = False
-
-#        self.wait_for_buffer_avaible()
+        uvc.uvc_free_device_list(dev_list, 1)
+        if dev == NULL:
+            uvc.uvc_exit(self.ctx)
+            raise Exception("Device with uid: '%s' not found"%dev_uid)
 
 
-#        #deque the buffer
-#        self._active_buffer.type = v4l2.V4L2_BUF_TYPE_VIDEO_CAPTURE
-#        self._active_buffer.memory = v4l2.V4L2_MEMORY_MMAP
-#        if self.xioctl(v4l2.VIDIOC_DQBUF, &self._active_buffer) == -1:
-#            if errno == EAGAIN: # no buffer available yet.
-#                raise Exception("Fixme")
+        #once found we open the device
+        self.dev = dev
+        error = uvc.uvc_open(self.dev,&self.devh)
+        if error != uvc.UVC_SUCCESS:
+            uvc.uvc_exit(self.ctx)
+            raise Exception("could not open device. Error:%s"%uvc_error_codes[error])
+        logger.debug("Device '%s' opended."%dev_uid)
 
-#            elif errno == EIO:
-#                # Can ignore EIO, see spec.
-#                pass
-#            else:
-#                raise Exception("VIDIOC_DQBUF")
-
-#        self._buffer_active = True
-
-#        # this is taken from the demo but it seams overly causious
-#        assert(self._active_buffer.index < self._allocated_buf_n)
-
-#        #now we hold a valid frame
-#        # print self._active_buffer.timestamp.tv_sec,',',self._active_buffer.timestamp.tv_usec,self._active_buffer.bytesused,self._active_buffer.index
-#        cdef Frame out_frame = Frame()
-#        out_frame.tj_context = self.tj_context
-#        out_frame.timestamp = <double>self._active_buffer.timestamp.tv_sec + (<double>self._active_buffer.timestamp.tv_usec) / 10e5
-#        out_frame.width,out_frame.height = self._frame_size
-
-#        cdef buffer_handle buf = buffer_handle()
-#        buf.start = (<buffer_handle>self.buffers[self._active_buffer.index]).start
-#        buf.length = self._active_buffer.bytesused
+    cdef _de_init_device(self):
+        uvc.uvc_close(self.devh)
+        self.devh = NULL
+        uvc.uvc_unref_device(self.dev)
+        self.dev = NULL
+        logger.debug('UVC device closed.')
 
 
-#        if self._transport_format == v4l2.V4L2_PIX_FMT_MJPEG:
-#            ##check jpeg header
-#            header_ok = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>buf.start, buf.length, &j_width, &j_height, &jpegSubsamp)
-#            if header_ok >=0 and out_frame.width == j_width and out_frame.height == out_frame.height:
-#                out_frame.jpeg_buffer  = buf
-#            else:
-#                raise Exception("JPEG header corrupted.")
+    def __dealloc__(self):
+        if self._stream_on:
+            self.stop()
+        if self.devh != NULL:
+            self._de_init_device()
+        uvc.uvc_exit(self.ctx)
+        turbojpeg.tjDestroy(self.tj_context)
 
-#        elif self._transport_format == v4l2.V4L2_PIX_FMT_YUYV:
-#            raise Exception("Transport format YUYV is not implemented")
-#            # out_frame._yuyv_buffer = buf
-#        else:
-#            raise Exception("Tranport format data '%s' is not implemented."%self.transport_format)
-#        return out_frame
+
+    def restart(self):
+        pass
+
+    def print_info(self):
+        pass
+
+    def get_frame_robust(self, int attemps = 6):
+        for a in range(attemps)[::-1]:
+            try:
+                frame = self.get_frame()
+            except:
+                logger.warning('Could not get Frame on "%s". Trying %s more times.'%(self.dev_name,a))
+                self.restart()
+            else:
+                return frame
+        raise Exception("Could not grab frame from %s"%self.dev_name)
+
+
+
+    def start(self):
+        cdef int status
+        status = uvc.uvc_get_stream_ctrl_format_size( self.devh, &self.ctrl,
+                                                      uvc.UVC_FRAME_FORMAT_COMPRESSED,
+                                                      640, 480, 120 )
+
+
+
+        status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl)
+        if status != uvc.UVC_SUCCESS:
+            raise Exception("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
+        status = uvc.uvc_stream_start_iso(self.strmh, NULL, NULL)
+        if status != uvc.UVC_SUCCESS:
+            raise Exception("Can't start isochronous stream: Error:'%s'."%uvc_error_codes[status])
+        self._stream_on = 1
+        logger.debug("Stream start.")
+
+    def stop(self):
+        uvc.uvc_stop_streaming(self.devh)
+        self._stream_on = 0
+        logger.debug("Stream stop.")
+
+
+
+    def get_frame(self,int timeout_usec = 5000000):
+        cdef int status, j_width,j_height,jpegSubsamp,header_ok
+        if not self._stream_on:
+            self.start()
+        cdef uvc.uvc_frame *uvc_frame = NULL
+        status = uvc.uvc_stream_get_frame(self.strmh,&uvc_frame,timeout_usec)
+        if status !=uvc.UVC_SUCCESS:
+            raise Exception("Error:'%s'."%uvc_error_codes[status])
+        if uvc_frame is NULL:
+            raise Exception("Frame pointer is NULL")
+
+        cdef Frame out_frame = Frame()
+        out_frame.tj_context = self.tj_context
+
+        out_frame.width,out_frame.height = uvc_frame.width,uvc_frame.height
+        print out_frame.width,out_frame.height
+        cdef buffer_handle buf = buffer_handle()
+        buf.start = uvc_frame.data
+        buf.length = uvc_frame.data_bytes
+        print buf.length
+
+        assert uvc_frame.library_owns_data
+
+        ##check jpeg header
+        header_ok = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>buf.start, buf.length, &j_width, &j_height, &jpegSubsamp)
+        if header_ok >=0 and out_frame.width == j_width and out_frame.height == out_frame.height:
+            out_frame.jpeg_buffer = buf
+        else:
+            raise Exception("JPEG header corrupted.")
+        return out_frame
 
 
 #    cdef wait_for_buffer_avaible(self):
@@ -914,11 +911,4 @@ def device_list():
 #    time.clock_gettime(time.CLOCK_MONOTONIC, &t)
 #    return t.tv_sec + <double>t.tv_nsec * 1e-9
 
-def fourcc_string(i):
-    s = chr(i & 255)
-    for shift in (8,16,24):
-        s += chr(i>>shift & 255)
-    return s
 
-#cpdef v4l2.__u32 fourcc_u32(char * fourcc):
-#    return v4l2.v4l2_fourcc(fourcc[0],fourcc[1],fourcc[2],fourcc[3])

@@ -5,6 +5,7 @@ from libc.string cimport const_char
 cdef extern from "libusb-1.0/libusb.h":
     pass
 
+
 cdef extern from  "libuvc/libuvc.h":
 
     ctypedef int uint8_t
@@ -208,6 +209,10 @@ cdef extern from  "libuvc/libuvc.h":
 
     uvc_error_t uvc_find_device( uvc_context_t *ctx, uvc_device_t **dev, int vid, int pid, const char *sn)
 
+    void uvc_ref_device(uvc_device_t *dev)
+    void uvc_unref_device(uvc_device_t *dev);
+
+
     uvc_error_t uvc_open(uvc_device_t *dev,uvc_device_handle_t **devh)
     void uvc_close(uvc_device_handle_t *devh)
 
@@ -232,15 +237,10 @@ cdef extern from  "libuvc/libuvc.h":
 
     void uvc_stop_streaming(uvc_device_handle_t *devh)
 
-    #uvc_error_t uvc_stream_open_ctrl(uvc_device_handle_t *devh, uvc_stream_handle_t **strmh, uvc_stream_ctrl_t *ctrl)
+    uvc_error_t uvc_stream_open_ctrl(uvc_device_handle_t *devh, uvc_stream_handle_t **strmh, uvc_stream_ctrl_t *ctrl)
     #uvc_error_t uvc_stream_ctrl(uvc_stream_handle_t *strmh, uvc_stream_ctrl_t *ctrl)
-    #uvc_error_t uvc_stream_start(uvc_stream_handle_t *strmh,
-    #    uvc_frame_callback_t *cb,
-    #    void *user_ptr,
-    #    uint8_t flags)
-    #uvc_error_t uvc_stream_start_iso(uvc_stream_handle_t *strmh,
-    #    uvc_frame_callback_t *cb,
-    #    void *user_ptr)
+    uvc_error_t uvc_stream_start(uvc_stream_handle_t *strmh,uvc_frame_callback_t *cb,void *user_ptr,uint8_t flags)
+    uvc_error_t uvc_stream_start_iso(uvc_stream_handle_t *strmh, uvc_frame_callback_t *cb, void *user_ptr)
 
     uvc_error_t uvc_stream_get_frame( uvc_stream_handle_t *strmh, uvc_frame_t **frame, int timeout_us)
     #uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh)
