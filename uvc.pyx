@@ -368,21 +368,25 @@ cdef class Capture:
 
 
     def restart(self):
-        pass
+        self.stop()
+        self.start()
 
     def print_info(self):
         pass
 
-    def get_frame_robust(self, int attemps = 6):
-        for a in range(attemps)[::-1]:
-            try:
-                frame = self.get_frame()
-            except:
-                logger.warning('Could not get Frame on "%s". Trying %s more times.'%(self.dev_name,a))
-                self.restart()
-            else:
-                return frame
-        raise Exception("Could not grab frame from %s"%self.dev_name)
+    def get_frame_robust(self):
+        cdef int a,r, attempts = 3,restarts = 2
+        for r in range(restarts):
+            for a in range(attempts)[::-1]:
+                try:
+                    frame = self.get_frame()
+                except Exception as e:
+                    logger.warning('Could not get Frame Error:"%s". Trying %s more times.'%(e,a))
+                else:
+                    return frame
+            logger.warning("Could not grab frame. Restarting device")
+            self.restart()
+        raise Exception("Could not grab frame. Giving up.")
 
 
 
@@ -410,8 +414,9 @@ cdef class Capture:
 
 
 
-    def get_frame(self,int timeout_usec = 5000000):
+    def get_frame(self):
         cdef int status, j_width,j_height,jpegSubsamp,header_ok
+        cdef int  timeout_usec = 1000000 #1sec
         if not self._stream_on:
             self.start()
         cdef uvc.uvc_frame *uvc_frame = NULL
@@ -425,13 +430,10 @@ cdef class Capture:
         out_frame.tj_context = self.tj_context
 
         out_frame.width,out_frame.height = uvc_frame.width,uvc_frame.height
-        print out_frame.width,out_frame.height
         cdef buffer_handle buf = buffer_handle()
         buf.start = uvc_frame.data
         buf.length = uvc_frame.data_bytes
-        print buf.length
 
-        assert uvc_frame.library_owns_data
 
         ##check jpeg header
         header_ok = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>buf.start, buf.length, &j_width, &j_height, &jpegSubsamp)
@@ -441,160 +443,6 @@ cdef class Capture:
             raise Exception("JPEG header corrupted.")
         return out_frame
 
-
-#    cdef wait_for_buffer_avaible(self):
-#        cdef select.fd_set fds
-#        cdef time.timeval tv
-#        cdef int r
-#        while True:
-#            select.FD_ZERO(&fds)
-#            select.FD_SET(self.dev_handle, &fds)
-#            tv.tv_sec = 2
-#            tv.tv_usec = 0
-
-#            r = select.select(self.dev_handle + 1, &fds, NULL, NULL, &tv)
-
-#            if r == 0:
-#                raise Exception("select timeout")
-#            elif r == -1:
-#                if errno != EINTR:
-#                    raise Exception("Select Error")
-#                else:
-#                    #try again
-#                    pass
-#            else:
-#                return
-
-
-#    cdef xioctl(self, int request, void *arg):
-#        cdef int r
-#        while True:
-#            r = ioctl(self.dev_handle, request, arg)
-#            if -1 != r or EINTR != errno:
-#                break
-#        return r
-
-#    cdef open_device(self):
-#        cdef stat.struct_stat st
-#        cdef int dev_handle = -1
-#        if -1 == stat.stat(<char *>self.dev_name, &st):
-#            raise Exception("Cannot find '%s'. Error: %d, %s\n"%(self.dev_name, errno, strerror(errno) ))
-#        if not stat.S_ISCHR(st.st_mode):
-#            raise Exception("%s is no device\n"%self.dev_name)
-
-#        dev_handle = fcntl.open(<char *>self.dev_name, fcntl.O_RDWR | fcntl.O_NONBLOCK, 0)
-#        if -1 == dev_handle:
-#            raise Exception("Cannot open '%s'. Error: %d, %s\n"%(self.dev_name, errno, strerror(errno) ))
-#        return dev_handle
-
-
-#    cdef close_device(self):
-#        if not self.dev_handle == -1:
-#            if unistd.close(self.dev_handle) == -1:
-#                raise Exception("Could not close device. Handle: '%s'. Error: %d, %s\n"%(self.dev_handle, errno, strerror(errno) ))
-#            self.dev_handle = -1
-
-
-#    cdef verify_device(self):
-#        cdef v4l2.v4l2_capability cap
-#        if self.xioctl(v4l2.VIDIOC_QUERYCAP, &cap) ==-1:
-#            if EINVAL == errno:
-#                raise Exception("%s is no V4L2 device\n"%self.dev_name)
-#            else:
-#                raise Exception("Error during VIDIOC_QUERYCAP: %d, %s"%(errno, strerror(errno) ))
-
-#        if not (cap.capabilities & v4l2.V4L2_CAP_VIDEO_CAPTURE):
-#            raise Exception("%s is no video capture device"%self.dev_name)
-
-#        if not (cap.capabilities & v4l2.V4L2_CAP_STREAMING):
-#            raise Exception("%s does not support streaming i/o"%self.dev_name)
-
-
-#    cdef stop(self):
-#        cdef v4l2.v4l2_buf_type buf_type
-#        if self._camera_streaming:
-#            buf_type = v4l2.V4L2_BUF_TYPE_VIDEO_CAPTURE
-#            if self.xioctl(v4l2.VIDIOC_STREAMOFF,&buf_type) == -1:
-#                self.close_device()
-#                raise Exception("Could not deinit buffers.")
-
-#            self._camera_streaming = False
-#            logger.debug("Capure stopped.")
-
-
-
-#    cdef start(self):
-#        cdef v4l2.v4l2_buffer buf
-#        cdef v4l2.v4l2_buf_type buf_type
-#        if not self._camera_streaming:
-#            for i in range(len(self.buffers)):
-#                buf.type = v4l2.V4L2_BUF_TYPE_VIDEO_CAPTURE
-#                buf.memory = v4l2.V4L2_MEMORY_MMAP
-#                buf.index = i
-#                if self.xioctl(v4l2.VIDIOC_QBUF, &buf) == -1:
-#                    raise Exception('VIDIOC_QBUF')
-
-#            buf_type = v4l2.V4L2_BUF_TYPE_VIDEO_CAPTURE
-#            if self.xioctl(v4l2.VIDIOC_STREAMON, &buf_type) ==-1:
-#                raise Exception("VIDIOC_STREAMON")
-#            self._camera_streaming = True
-#            logger.debug("Capure started.")
-
-
-
-#    cdef init_buffers(self):
-#        cdef v4l2.v4l2_requestbuffers req
-#        cdef v4l2.v4l2_buffer buf
-#        if not self._buffers_initialized:
-#            req.count = 4
-#            req.type = v4l2.V4L2_BUF_TYPE_VIDEO_CAPTURE
-#            req.memory = v4l2.V4L2_MEMORY_MMAP
-
-#            if self.xioctl(v4l2.VIDIOC_REQBUFS, &req) == -1:
-#                if EINVAL == errno:
-#                    raise Exception("%s does not support memory mapping"%self.dev_name)
-#                else:
-#                    raise Exception("VIDIOC_REQBUFS failed")
-
-#            if req.count < 2:
-#                raise Exception("Insufficient buffer memory on %s\n"%self.dev_name)
-
-#            self.buffers = []
-#            self._allocated_buf_n = req.count
-
-#            for buf_n in range(req.count):
-#                buf.type        = v4l2.V4L2_BUF_TYPE_VIDEO_CAPTURE
-#                buf.memory      = v4l2.V4L2_MEMORY_MMAP
-#                buf.index       = buf_n
-#                if self.xioctl(v4l2.VIDIOC_QUERYBUF, &buf) == -1:
-#                    raise Exception("VIDIOC_QUERYBUF")
-
-#                b = buffer_handle()
-#                b.length = buf.length
-#                b.start = mman.mmap(NULL,#start anywhere
-#                                    buf.length,
-#                                    mman.PROT_READ | mman.PROT_WRITE,#required
-#                                    mman.MAP_SHARED,#recommended
-#                                    self.dev_handle, buf.m.offset)
-#                if <int>b.start == mman.MAP_FAILED:
-#                    raise Exception("MMAP Error")
-#                self.buffers.append(b)
-
-#            self._buffers_initialized = True
-#            logger.debug("Buffers initialized")
-
-
-#    cdef deinit_buffers(self):
-#        cdef buffer_handle b
-#        if self._buffers_initialized:
-#            for b in self.buffers:
-#                if mman.munmap(b.start, b.length) ==-1:
-#                    raise Exception("munmap error")
-#            self.buffers = []
-#            self._buffers_initialized = False
-#            self._allocated_buf_n = 0
-#            self._buffer_active = False
-#            logger.debug("Buffers deinitialized")
 
 
 #    cdef set_format(self):
