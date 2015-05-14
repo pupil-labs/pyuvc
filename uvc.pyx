@@ -23,7 +23,27 @@ uvc_error_codes = {  0:"Success (no error)",
                     -52:"Resource has a callback (can't use polling and async)",
                     -99:"Undefined error."}
 
+uvc_vs_subtype = {
+   0x00 : "UVC_VS_UNDEFINED",
+   0x01 : "UVC_VS_INPUT_HEADER",
+   0x02 : "UVC_VS_OUTPUT_HEADER",
+   0x03 : "UVC_VS_STILL_IMAGE_FRAME",
+   0x04 : "UVC_VS_FORMAT_UNCOMPRESSED",
+   0x05 : "UVC_VS_FRAME_UNCOMPRESSED",
+   0x06 : "UVC_VS_FORMAT_MJPEG",
+   0x07 : "UVC_VS_FRAME_MJPEG",
+   0x0a : "UVC_VS_FORMAT_MPEG2TS",
+   0x0c : "UVC_VS_FORMAT_DV",
+   0x0d : "UVC_VS_COLORFORMAT",
+   0x10 : "UVC_VS_FORMAT_FRAME_BASED",
+   0x11 : "UVC_VS_FRAME_FRAME_BASED",
+   0x12 : "UVC_VS_FORMAT_STREAM_BASED"
+}
 
+class CaptureError(Exception):
+    def __init__(self, message):
+        super(CaptureError, self).__init__()
+        self.message = message
 
 #logging
 import logging
@@ -293,6 +313,10 @@ cdef class Capture:
     cdef uvc.uvc_stream_handle_t *strmh
     cdef uvc.uvc_frame *uvc_frame
 
+    cdef tuple _frame_size
+    cdef int _frame_rate
+    cdef dict _available_frame_formats
+
     def __cinit__(self,dev_uid):
         self.dev = NULL
         self.ctx = NULL
@@ -310,7 +334,7 @@ cdef class Capture:
             raise Exception('Could not init libuvc')
 
         self._init_device(dev_uid)
-
+        self._enumerate_formats()
 
 
     cdef _init_device(self,dev_uid):
@@ -360,41 +384,27 @@ cdef class Capture:
 
     def __dealloc__(self):
         if self._stream_on:
-            self.stop()
+            self._stop()
         if self.devh != NULL:
             self._de_init_device()
         uvc.uvc_exit(self.ctx)
         turbojpeg.tjDestroy(self.tj_context)
 
 
-    def restart(self):
-        self.stop()
-        self.start()
+    cdef _restart(self):
+        self._stop()
+        self._start()
 
     def print_info(self):
         pass
 
-    def get_frame_robust(self):
-        cdef int a,r, attempts = 3,restarts = 2
-        for r in range(restarts):
-            for a in range(attempts)[::-1]:
-                try:
-                    frame = self.get_frame()
-                except Exception as e:
-                    logger.warning('Could not get Frame Error:"%s". Trying %s more times.'%(e,a))
-                else:
-                    return frame
-            logger.warning("Could not grab frame. Restarting device")
-            self.restart()
-        raise Exception("Could not grab frame. Giving up.")
 
 
-
-    def start(self):
+    cdef _start(self):
         cdef int status
         status = uvc.uvc_get_stream_ctrl_format_size( self.devh, &self.ctrl,
                                                       uvc.UVC_FRAME_FORMAT_COMPRESSED,
-                                                      640, 480, 120 )
+                                                      1280, 720, 30 )
 
 
 
@@ -407,10 +417,25 @@ cdef class Capture:
         self._stream_on = 1
         logger.debug("Stream start.")
 
-    def stop(self):
+    cdef _stop(self):
         uvc.uvc_stop_streaming(self.devh)
         self._stream_on = 0
         logger.debug("Stream stop.")
+
+
+    def get_frame_robust(self):
+        cdef int a,r, attempts = 3,restarts = 2
+        for r in range(restarts):
+            for a in range(attempts)[::-1]:
+                try:
+                    frame = self.get_frame()
+                except CaptureError as e:
+                    logger.warning('Could not get Frame. Error:"%s". Trying %s more times.'%(e.message,a))
+                else:
+                    return frame
+            logger.warning("Could not grab frame. Restarting device")
+            self._restart()
+        raise Exception("Could not grab frame. Giving up.")
 
 
 
@@ -418,13 +443,13 @@ cdef class Capture:
         cdef int status, j_width,j_height,jpegSubsamp,header_ok
         cdef int  timeout_usec = 1000000 #1sec
         if not self._stream_on:
-            self.start()
+            self._start()
         cdef uvc.uvc_frame *uvc_frame = NULL
         status = uvc.uvc_stream_get_frame(self.strmh,&uvc_frame,timeout_usec)
         if status !=uvc.UVC_SUCCESS:
-            raise Exception("Error:'%s'."%uvc_error_codes[status])
+            raise CaptureError(uvc_error_codes[status])
         if uvc_frame is NULL:
-            raise Exception("Frame pointer is NULL")
+            raise CaptureError("Frame pointer is NULL")
 
         cdef Frame out_frame = Frame()
         out_frame.tj_context = self.tj_context
@@ -443,7 +468,71 @@ cdef class Capture:
             raise Exception("JPEG header corrupted.")
         return out_frame
 
+    cdef _enumerate_controls(self):
 
+        #cdef uvc.uvc_input_terminal_t  *input_terminal = uvc.uvc_get_input_terminals(self.devh)
+        #cdef uvc.uvc_output_terminal_t  *output_terminal = uvc.uvc_get_output_terminals(self.devh)
+        #cdef uvc.uvc_processing_unit_t  *processing_unit = uvc.uvc_get_processing_units(self.devh)
+        #cdef uvc.uvc_extension_unit_t  *extension_unit = uvc.uvc_extension_unit_t(self.devh)
+
+        uvc.uvc_set_status_callback(self.devh, on_status_update,<void*>self)
+
+
+    cdef _enumerate_formats(self):
+        cdef uvc.uvc_format_desc_t *format_desc = uvc.uvc_get_format_descs(self.devh)
+        cdef uvc.uvc_frame_desc *frame_desc
+        cdef int i
+        while True:
+            frame_desc = format_desc.frame_descs
+            logger.debug("Format %s"%uvc_vs_subtype[frame_desc.bDescriptorSubtype])
+            while True:
+                frame_index = frame_desc.bFrameIndex
+                width,height = frame_desc.wWidth,frame_desc.wHeight
+                logger.debug('Size: %s %s,%s'%(frame_index,width,height))
+                i = 0
+                while frame_desc.intervals[i]:
+                    logger.debug('\tFPS: %s'%(10000000./frame_desc.intervals[i]))
+                    i+=1
+                #go to next frame_desc
+                frame_desc = frame_desc.next
+                if frame_desc is NULL:
+                    break
+            #go to next format_desc
+            format_desc = format_desc.next
+            if format_desc is NULL:
+                break
+
+    property frame_size:
+        def __get__(self):
+            return self._frame_size
+        def __set__(self,val):
+
+            self.stop()
+            self.deinit_buffers()
+            self.set_format()
+            self.get_format()
+            self.set_streamparm()
+            self.get_streamparm()
+
+    property frame_rate:
+        def __get__(self):
+            return self._frame_rate
+        def __set__(self,val):
+            self._frame_rate = val
+            self.stop()
+            self.deinit_buffers()
+            self.set_streamparm()
+            self.get_streamparm()
+
+cdef void on_status_update(uvc.uvc_status_class status_class,
+                        int event,
+                        int selector,
+                        uvc.uvc_status_attribute status_attribute,
+                        void *data,
+                        size_t data_len,
+                        void *user_ptr):
+    print status_class,event,selector,status_attribute,data_len
+    print <object>user_ptr
 
 #    cdef set_format(self):
 #        cdef v4l2.v4l2_format  format

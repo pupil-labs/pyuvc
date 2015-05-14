@@ -9,7 +9,9 @@ cdef extern from "libusb-1.0/libusb.h":
 cdef extern from  "libuvc/libuvc.h":
 
     ctypedef int uint8_t
+    ctypedef int uint16_t
     ctypedef int uint32_t
+
 
     cdef enum uvc_error:
         UVC_SUCCESS
@@ -57,12 +59,71 @@ cdef extern from  "libuvc/libuvc.h":
         UVC_COLOR_FORMAT_MJPEG
         UVC_COLOR_FORMAT_GRAY8
 
+
+    enum uvc_vs_desc_subtype:
+        UVC_VS_UNDEFINED = 0x00
+        UVC_VS_INPUT_HEADER = 0x01
+        UVC_VS_OUTPUT_HEADER = 0x02
+        UVC_VS_STILL_IMAGE_FRAME = 0x03
+        UVC_VS_FORMAT_UNCOMPRESSED = 0x04
+        UVC_VS_FRAME_UNCOMPRESSED = 0x05
+        UVC_VS_FORMAT_MJPEG = 0x06
+        UVC_VS_FRAME_MJPEG = 0x07
+        UVC_VS_FORMAT_MPEG2TS = 0x0a
+        UVC_VS_FORMAT_DV = 0x0c
+        UVC_VS_COLORFORMAT = 0x0d
+        UVC_VS_FORMAT_FRAME_BASED = 0x10
+        UVC_VS_FRAME_FRAME_BASED = 0x11
+        UVC_VS_FORMAT_STREAM_BASED = 0x12
+
     cdef struct uvc_frame_desc:
-        pass
+        uvc_format_desc *parent
+        uvc_frame_desc *prev
+        uvc_frame_desc *next
+        uvc_vs_desc_subtype bDescriptorSubtype
+        uint8_t bFrameIndex
+        uint8_t bmCapabilities
+        uint16_t wWidth
+        uint16_t wHeight
+        uint32_t dwMinBitRate
+        uint32_t dwMaxBitRate
+        uint32_t dwMaxVideoFrameBufferSize
+        uint32_t dwDefaultFrameInterval
+        uint32_t dwMinFrameInterval
+        uint32_t dwMaxFrameInterval
+        uint32_t dwFrameIntervalStep
+        uint8_t bFrameIntervalType
+        uint32_t dwBytesPerLine
+        uint32_t *intervals
     ctypedef uvc_frame_desc uvc_frame_desc_t
 
     cdef struct uvc_format_desc:
-        pass
+        #uvc_streaming_interface *parent
+        uvc_format_desc *prev
+        uvc_format_desc *next
+        uvc_vs_desc_subtype bDescriptorSubtype
+        uint8_t bFormatIndex
+        uint8_t bNumFrameDescriptors
+        #union {
+        #uint8_t guidFormat[16]
+        #uint8_t fourccFormat[4]
+        #}
+        #/** Format-specific data */
+        #union {
+        #/** BPP for uncompressed stream */
+        #uint8_t bBitsPerPixel
+        #/** Flags for JPEG stream */
+        #uint8_t bmFlags
+        #}
+        #/** Default {uvc_frame_desc} to choose given this format */
+        uint8_t bDefaultFrameIndex
+        uint8_t bAspectRatioX
+        uint8_t bAspectRatioY
+        uint8_t bmInterlaceFlags
+        uint8_t bCopyProtect
+        uint8_t bVariableSize
+        uvc_frame_desc *frame_descs
+
     ctypedef uvc_format_desc uvc_format_desc_t
 
 
@@ -141,6 +202,11 @@ cdef extern from  "libuvc/libuvc.h":
         pass
     ctypedef uvc_input_terminal uvc_input_terminal_t
 
+    cdef struct uvc_output_terminal:
+        pass
+    ctypedef uvc_output_terminal uvc_output_terminal_t
+
+
     cdef struct uvc_processing_unit:
         pass
     ctypedef uvc_processing_unit uvc_processing_unit_t
@@ -149,18 +215,26 @@ cdef extern from  "libuvc/libuvc.h":
         pass
     ctypedef uvc_extension_unit uvc_extension_unit_t
 
+
+
     cdef enum uvc_status_class:
-        pass
+        UVC_STATUS_CLASS_CONTROL = 0x10
+        UVC_STATUS_CLASS_CONTROL_CAMERA = 0x11
+        UVC_STATUS_CLASS_CONTROL_PROCESSING = 0x12
 
     cdef enum uvc_status_attribute:
-        pass
+        UVC_STATUS_ATTRIBUTE_VALUE_CHANGE = 0x00,
+        UVC_STATUS_ATTRIBUTE_INFO_CHANGE = 0x01,
+        UVC_STATUS_ATTRIBUTE_FAILURE_CHANGE = 0x02,
+        UVC_STATUS_ATTRIBUTE_UNKNOWN = 0xff
 
-    #typedef void(uvc_status_callback_t)(enum uvc_status_class status_class,
-    #                                    int event,
-    #                                    int selector,
-    #                                    enum uvc_status_attribute status_attribute,
-    #                                    void *data, size_t data_len,
-    #                                    void *user_ptr)
+    ctypedef void(*uvc_status_callback_t)(uvc_status_class status_class,
+                                        int event,
+                                        int selector,
+                                        uvc_status_attribute status_attribute,
+                                        void *data,
+                                        size_t data_len,
+                                        void *user_ptr)
 
 
     cdef struct uvc_device_descriptor:
@@ -210,7 +284,7 @@ cdef extern from  "libuvc/libuvc.h":
     uvc_error_t uvc_find_device( uvc_context_t *ctx, uvc_device_t **dev, int vid, int pid, const char *sn)
 
     void uvc_ref_device(uvc_device_t *dev)
-    void uvc_unref_device(uvc_device_t *dev);
+    void uvc_unref_device(uvc_device_t *dev)
 
 
     uvc_error_t uvc_open(uvc_device_t *dev,uvc_device_handle_t **devh)
@@ -219,12 +293,13 @@ cdef extern from  "libuvc/libuvc.h":
     uvc_device_t *uvc_get_device(uvc_device_handle_t *devh)
     ctypedef void(*uvc_frame_callback_t)( uvc_frame *frame, void *user_ptr) # this is supposed to work wihtout a pointer?
 
-    #void uvc_set_status_callback(uvc_device_handle_t *devh,uvc_status_callback_t cb,void *user_ptr)
+    void uvc_set_status_callback(uvc_device_handle_t *devh, uvc_status_callback_t cb,void *user_ptr)
 
-    #const uvc_input_terminal_t *uvc_get_input_terminals(uvc_device_handle_t *devh)
-    #const uvc_output_terminal_t *uvc_get_output_terminals(uvc_device_handle_t *devh)
-    #const uvc_processing_unit_t *uvc_get_processing_units(uvc_device_handle_t *devh)
-    #const uvc_extension_unit_t *uvc_get_extension_units(uvc_device_handle_t *devh)
+
+    const uvc_input_terminal_t *uvc_get_input_terminals(uvc_device_handle_t *devh)
+    const uvc_output_terminal_t *uvc_get_output_terminals(uvc_device_handle_t *devh)
+    const uvc_processing_unit_t *uvc_get_processing_units(uvc_device_handle_t *devh)
+    const uvc_extension_unit_t *uvc_get_extension_units(uvc_device_handle_t *devh)
 
 
     uvc_error_t uvc_get_stream_ctrl_format_size( uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_format format, int width, int height, int fps)
@@ -393,3 +468,5 @@ cdef extern from  "libuvc/libuvc.h":
     #uvc_error_t uvc_yuyv2bgr(uvc_frame_t *in, uvc_frame_t *out)
     #uvc_error_t uvc_uyvy2bgr(uvc_frame_t *in, uvc_frame_t *out)
     #uvc_error_t uvc_any2bgr(uvc_frame_t *in, uvc_frame_t *out)
+
+
