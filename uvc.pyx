@@ -309,21 +309,20 @@ cdef class Capture:
     cdef uvc.uvc_device_t *dev
     cdef uvc.uvc_device_handle_t *devh
     cdef uvc.uvc_stream_ctrl_t ctrl
-    cdef bint _stream_on
+    cdef bint _stream_on,_configured
     cdef uvc.uvc_stream_handle_t *strmh
-    cdef uvc.uvc_frame *uvc_frame
 
-    cdef tuple _frame_size
-    cdef int _frame_rate
-    cdef dict _available_frame_formats
+    cdef tuple _active_mode
+    cdef list _available_modes
 
     def __cinit__(self,dev_uid):
         self.dev = NULL
         self.ctx = NULL
         self.devh = NULL
         self._stream_on = 0
+        self._configured = 0
         self.strmh = NULL
-        self.uvc_frame = NULL
+        self._available_modes = []
 
     def __init__(self,dev_uid):
 
@@ -335,7 +334,7 @@ cdef class Capture:
 
         self._init_device(dev_uid)
         self._enumerate_formats()
-
+        self._enumerate_controls()
 
     cdef _init_device(self,dev_uid):
 
@@ -387,7 +386,8 @@ cdef class Capture:
             self._stop()
         if self.devh != NULL:
             self._de_init_device()
-        uvc.uvc_exit(self.ctx)
+        if self.ctx != NULL:
+            uvc.uvc_exit(self.ctx)
         turbojpeg.tjDestroy(self.tj_context)
 
 
@@ -398,30 +398,57 @@ cdef class Capture:
     def print_info(self):
         pass
 
-
-
-    cdef _start(self):
+    cdef _configure_stream(self,mode=(640,480,30)):
         cdef int status
         status = uvc.uvc_get_stream_ctrl_format_size( self.devh, &self.ctrl,
                                                       uvc.UVC_FRAME_FORMAT_COMPRESSED,
-                                                      1280, 720, 30 )
-
-
+                                                      mode[0],mode[1],mode[2] )
+        if status != uvc.UVC_SUCCESS:
+            raise Exception("Can't get stream control: Error:'%s'."%uvc_error_codes[status])
 
         status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl)
         if status != uvc.UVC_SUCCESS:
             raise Exception("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
-        status = uvc.uvc_stream_start_iso(self.strmh, NULL, NULL)
+        self._configured = 1
+        self._active_mode = mode
+
+
+    #cdef _reconfigure_stream(self,mode):
+    #    cdef int status
+    #    status = uvc.uvc_get_stream_ctrl_format_size(self.devh, &self.ctrl,
+    #                                                  uvc.UVC_FRAME_FORMAT_COMPRESSED,
+    #                                                  mode[0],mode[1],mode[2])
+    #    if status != uvc.UVC_SUCCESS:
+    #        raise Exception("Can't get stream control: Error:'%s'."%uvc_error_codes[status])
+
+    #    status = uvc.set_uvc_stream_ctrl(self.strmh,&self.ctrl)
+    #    if status != uvc.UVC_SUCCESS:
+    #        raise Exception("Can't reconfigure stream : Error:'%s'."%uvc_error_codes[status])
+    #    self._active_mode = mode
+
+
+    cdef _start(self):
+        cdef int status
+        if not self._configured:
+            self._configure_stream()
+
+        status = uvc.uvc_stream_start(self.strmh, NULL, NULL,0)
         if status != uvc.UVC_SUCCESS:
             raise Exception("Can't start isochronous stream: Error:'%s'."%uvc_error_codes[status])
         self._stream_on = 1
         logger.debug("Stream start.")
 
     cdef _stop(self):
+        #cdef int status = 0
+        #status = uvc.uvc_stream_stop(self.strmh)
+        #if status != uvc.UVC_SUCCESS:
+        #    raise Exception("Can't stop  stream: Error:'%s'."%uvc_error_codes[status])
+        #print "stopped"
+        #uvc.uvc_stream_close(self.strmh)
+        #print 'closed'
         uvc.uvc_stop_streaming(self.devh)
         self._stream_on = 0
         logger.debug("Stream stop.")
-
 
     def get_frame_robust(self):
         cdef int a,r, attempts = 3,restarts = 2
@@ -470,10 +497,21 @@ cdef class Capture:
 
     cdef _enumerate_controls(self):
 
-        #cdef uvc.uvc_input_terminal_t  *input_terminal = uvc.uvc_get_input_terminals(self.devh)
-        #cdef uvc.uvc_output_terminal_t  *output_terminal = uvc.uvc_get_output_terminals(self.devh)
-        #cdef uvc.uvc_processing_unit_t  *processing_unit = uvc.uvc_get_processing_units(self.devh)
-        #cdef uvc.uvc_extension_unit_t  *extension_unit = uvc.uvc_extension_unit_t(self.devh)
+        cdef uvc.uvc_input_terminal_t  *input_terminal = uvc.uvc_get_input_terminals(self.devh)
+        cdef uvc.uvc_output_terminal_t  *output_terminal = uvc.uvc_get_output_terminals(self.devh)
+        cdef uvc.uvc_processing_unit_t  *processing_unit = uvc.uvc_get_processing_units(self.devh)
+        cdef uvc.uvc_extension_unit_t  *extension_unit = uvc.uvc_get_extension_units(self.devh)
+
+        while extension_unit !=NULL:
+            bUnitID = extension_unit.bUnitID
+            print bUnitID
+            extension_unit = extension_unit.next
+
+        while input_terminal !=NULL:
+            bmControls = input_terminal.bmControls
+            print bmControls
+            input_terminal = input_terminal.next
+
 
         uvc.uvc_set_status_callback(self.devh, on_status_update,<void*>self)
 
@@ -482,17 +520,22 @@ cdef class Capture:
         cdef uvc.uvc_format_desc_t *format_desc = uvc.uvc_get_format_descs(self.devh)
         cdef uvc.uvc_frame_desc *frame_desc
         cdef int i
+        self._available_modes = []
         while True:
             frame_desc = format_desc.frame_descs
-            logger.debug("Format %s"%uvc_vs_subtype[frame_desc.bDescriptorSubtype])
-            while True:
+            #logger.debug("Format %s"%uvc_vs_subtype[frame_desc.bDescriptorSubtype])
+            while frame_desc.bDescriptorSubtype == uvc.UVC_VS_FRAME_MJPEG:
                 frame_index = frame_desc.bFrameIndex
                 width,height = frame_desc.wWidth,frame_desc.wHeight
-                logger.debug('Size: %s %s,%s'%(frame_index,width,height))
+                #logger.debug('Size: %s %s,%s'%(frame_index,width,height))
+                mode = {'size':(width,height),'rates':[]}
                 i = 0
                 while frame_desc.intervals[i]:
-                    logger.debug('\tFPS: %s'%(10000000./frame_desc.intervals[i]))
+                    mode['rates'].append(interval_to_fps(frame_desc.intervals[i]) )
+                    #logger.debug('\tFPS: %s'%(10000000./frame_desc.intervals[i]))
                     i+=1
+                self._available_modes.append(mode)
+
                 #go to next frame_desc
                 frame_desc = frame_desc.next
                 if frame_desc is NULL:
@@ -501,28 +544,34 @@ cdef class Capture:
             format_desc = format_desc.next
             if format_desc is NULL:
                 break
+        logger.debug('avaible video modes: %s'%self._available_modes)
+
 
     property frame_size:
         def __get__(self):
-            return self._frame_size
-        def __set__(self,val):
-
-            self.stop()
-            self.deinit_buffers()
-            self.set_format()
-            self.get_format()
-            self.set_streamparm()
-            self.get_streamparm()
+            return self._active_mode[:2]
 
     property frame_rate:
         def __get__(self):
-            return self._frame_rate
+            return self._active_mode[2]
         def __set__(self,val):
-            self._frame_rate = val
-            self.stop()
-            self.deinit_buffers()
-            self.set_streamparm()
-            self.get_streamparm()
+            raise Exception('Frame rate and size cannot be set independently. Please use set_mode.')
+
+    property frame_mode:
+        def __get__(self):
+            return self._active_mode
+        def __set__(self,mode):
+            if self._stream_on:
+                self._stop()
+            self._configure_stream(mode)
+
+    property avaible_modes:
+        def __get__(self):
+            modes = []
+            for idx,m in enumerate(self._available_modes):
+                for r in m['rates']:
+                    modes.append(m['size']+(r,))
+            return modes
 
 cdef void on_status_update(uvc.uvc_status_class status_class,
                         int event,
@@ -533,6 +582,9 @@ cdef void on_status_update(uvc.uvc_status_class status_class,
                         void *user_ptr):
     print status_class,event,selector,status_attribute,data_len
     print <object>user_ptr
+
+cdef inline int interval_to_fps(int interval):
+    return int(10000000./interval)
 
 #    cdef set_format(self):
 #        cdef v4l2.v4l2_format  format

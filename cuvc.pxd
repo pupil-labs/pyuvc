@@ -11,7 +11,7 @@ cdef extern from  "libuvc/libuvc.h":
     ctypedef int uint8_t
     ctypedef int uint16_t
     ctypedef int uint32_t
-
+    ctypedef int uint64_t
 
     cdef enum uvc_error:
         UVC_SUCCESS
@@ -199,7 +199,11 @@ cdef extern from  "libuvc/libuvc.h":
     ctypedef uvc_stream_handle uvc_stream_handle_t
 
     cdef struct uvc_input_terminal:
-        pass
+        uvc_input_terminal *prev
+        uvc_input_terminal *next
+        uint8_t bTerminalID
+        uint64_t bmControls
+
     ctypedef uvc_input_terminal uvc_input_terminal_t
 
     cdef struct uvc_output_terminal:
@@ -212,7 +216,11 @@ cdef extern from  "libuvc/libuvc.h":
     ctypedef uvc_processing_unit uvc_processing_unit_t
 
     cdef struct uvc_extension_unit:
-        pass
+        uvc_extension_unit *prev
+        uvc_extension_unit *next
+        uint8_t bUnitID
+        uint8_t guidExtensionCode[16]
+        uint64_t bmControls
     ctypedef uvc_extension_unit uvc_extension_unit_t
 
 
@@ -313,13 +321,13 @@ cdef extern from  "libuvc/libuvc.h":
     void uvc_stop_streaming(uvc_device_handle_t *devh)
 
     uvc_error_t uvc_stream_open_ctrl(uvc_device_handle_t *devh, uvc_stream_handle_t **strmh, uvc_stream_ctrl_t *ctrl)
-    #uvc_error_t uvc_stream_ctrl(uvc_stream_handle_t *strmh, uvc_stream_ctrl_t *ctrl)
+    uvc_error_t set_uvc_stream_ctrl"uvc_stream_ctrl"(uvc_stream_handle_t *strmh, uvc_stream_ctrl_t *ctrl)
     uvc_error_t uvc_stream_start(uvc_stream_handle_t *strmh,uvc_frame_callback_t *cb,void *user_ptr,uint8_t flags)
-    uvc_error_t uvc_stream_start_iso(uvc_stream_handle_t *strmh, uvc_frame_callback_t *cb, void *user_ptr)
+    #uvc_error_t uvc_stream_start_iso(uvc_stream_handle_t *strmh, uvc_frame_callback_t *cb, void *user_ptr)
 
     uvc_error_t uvc_stream_get_frame( uvc_stream_handle_t *strmh, uvc_frame_t **frame, int timeout_us)
-    #uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh)
-    #void uvc_stream_close(uvc_stream_handle_t *strmh)
+    uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh)
+    void uvc_stream_close(uvc_stream_handle_t *strmh)
 
 
     #int uvc_get_ctrl_len(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl)
