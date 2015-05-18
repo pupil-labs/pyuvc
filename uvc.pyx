@@ -323,6 +323,7 @@ cdef class Capture:
         self._configured = 0
         self.strmh = NULL
         self._available_modes = []
+        self._active_mode = None,None,None
 
     def __init__(self,dev_uid):
 
@@ -388,7 +389,7 @@ cdef class Capture:
             self._de_init_device()
         if self.ctx != NULL:
             uvc.uvc_exit(self.ctx)
-        turbojpeg.tjDestroy(self.tj_context)
+            turbojpeg.tjDestroy(self.tj_context)
 
 
     cdef _restart(self):
@@ -457,7 +458,7 @@ cdef class Capture:
                 try:
                     frame = self.get_frame()
                 except CaptureError as e:
-                    logger.warning('Could not get Frame. Error:"%s". Trying %s more times.'%(e.message,a))
+                    logger.warning('Could not get Frame. Error: "%s". Trying %s more times.'%(e.message,a))
                 else:
                     return frame
             logger.warning("Could not grab frame. Restarting device")
@@ -495,6 +496,7 @@ cdef class Capture:
             raise Exception("JPEG header corrupted.")
         return out_frame
 
+
     cdef _enumerate_controls(self):
 
         cdef uvc.uvc_input_terminal_t  *input_terminal = uvc.uvc_get_input_terminals(self.devh)
@@ -502,18 +504,23 @@ cdef class Capture:
         cdef uvc.uvc_processing_unit_t  *processing_unit = uvc.uvc_get_processing_units(self.devh)
         cdef uvc.uvc_extension_unit_t  *extension_unit = uvc.uvc_get_extension_units(self.devh)
 
+        cdef uvc.uint8_t data[8]
+        print 'ext units'
         while extension_unit !=NULL:
             bUnitID = extension_unit.bUnitID
-            print bUnitID
+            print bUnitID,bin(extension_unit.bmControls)
             extension_unit = extension_unit.next
 
+        print 'input terminals'
         while input_terminal !=NULL:
             bmControls = input_terminal.bmControls
-            print bmControls
+            print bmControls,bin(input_terminal.bmControls)
+            d_len = uvc.uvc_get_ctrl_len(self.devh,bUnitID,1)
+            #print uvc.uvc_get_ctrl(self.devh,bUnitID,1)
             input_terminal = input_terminal.next
 
-
-        uvc.uvc_set_status_callback(self.devh, on_status_update,<void*>self)
+        #uvc.PyEval_InitThreads()
+        #uvc.uvc_set_status_callback(self.devh, on_status_update,<void*>self)
 
 
     cdef _enumerate_formats(self):
@@ -521,48 +528,68 @@ cdef class Capture:
         cdef uvc.uvc_frame_desc *frame_desc
         cdef int i
         self._available_modes = []
-        while True:
+        while format_desc is not NULL:
             frame_desc = format_desc.frame_descs
-            #logger.debug("Format %s"%uvc_vs_subtype[frame_desc.bDescriptorSubtype])
-            while frame_desc.bDescriptorSubtype == uvc.UVC_VS_FRAME_MJPEG:
-                frame_index = frame_desc.bFrameIndex
-                width,height = frame_desc.wWidth,frame_desc.wHeight
-                #logger.debug('Size: %s %s,%s'%(frame_index,width,height))
-                mode = {'size':(width,height),'rates':[]}
-                i = 0
-                while frame_desc.intervals[i]:
-                    mode['rates'].append(interval_to_fps(frame_desc.intervals[i]) )
-                    #logger.debug('\tFPS: %s'%(10000000./frame_desc.intervals[i]))
-                    i+=1
-                self._available_modes.append(mode)
+            while frame_desc is not NULL:
+                if frame_desc.bDescriptorSubtype == uvc.UVC_VS_FRAME_MJPEG:
+                    frame_index = frame_desc.bFrameIndex
+                    width,height = frame_desc.wWidth,frame_desc.wHeight
+                    mode = {'size':(width,height),'rates':[]}
+                    i = 0
+                    while frame_desc.intervals[i]:
+                        mode['rates'].append(interval_to_fps(frame_desc.intervals[i]) )
+                        i+=1
+                    self._available_modes.append(mode)
 
                 #go to next frame_desc
                 frame_desc = frame_desc.next
-                if frame_desc is NULL:
-                    break
+
             #go to next format_desc
             format_desc = format_desc.next
-            if format_desc is NULL:
-                break
+
         logger.debug('avaible video modes: %s'%self._available_modes)
 
 
     property frame_size:
         def __get__(self):
             return self._active_mode[:2]
+        def __set__(self,size):
+            for m in self._available_modes:
+                if size == m['size']:
+                    if self.frame_rate is not None:
+                        #closest match for rate
+                        rates = [ abs(r-self.frame_rate) for r in m['rates'] ]
+                        best_rate_idx = rates.index(min(rates))
+                        rate = m['rates'][best_rate_idx]
+                    else:
+                        #fist one
+                        rate = m['rates'][0]
+                    mode = size + (rate,)
+                    self._configure_stream(mode)
+                    return
+            raise Exception("Frame size not suported.")
 
     property frame_rate:
         def __get__(self):
             return self._active_mode[2]
         def __set__(self,val):
-            raise Exception('Frame rate and size cannot be set independently. Please use set_mode.')
+            self.frame_mode = self._active_mode[:2]+(val,)
+
+    property frame_rates:
+        def __get__(self):
+            for m in self._available_modes:
+                if m['size'] == self.frame_size:
+                    return m['rates']
+            raise Exception("Please set frame_size before asking for rates.")
+
 
     property frame_mode:
         def __get__(self):
             return self._active_mode
         def __set__(self,mode):
-            if self._stream_on:
+            if self._stream_on or 1:
                 self._stop()
+            logger.debug('Setting mode: %s,%s,%s'%mode)
             self._configure_stream(mode)
 
     property avaible_modes:
@@ -579,167 +606,13 @@ cdef void on_status_update(uvc.uvc_status_class status_class,
                         uvc.uvc_status_attribute status_attribute,
                         void *data,
                         size_t data_len,
-                        void *user_ptr):
-    print status_class,event,selector,status_attribute,data_len
+                        void *user_ptr) with gil:
+    print "Callback"
+    print status_class, event,selector,status_attribute,data_len
     print <object>user_ptr
 
 cdef inline int interval_to_fps(int interval):
     return int(10000000./interval)
-
-#    cdef set_format(self):
-#        cdef v4l2.v4l2_format  format
-#        format.type = v4l2.V4L2_BUF_TYPE_VIDEO_CAPTURE
-#        format.fmt.pix.width       = self.frame_size[0]
-#        format.fmt.pix.height      = self.frame_size[1]
-#        format.fmt.pix.pixelformat = self._transport_format
-
-
-#        format.fmt.pix.field       = v4l2.V4L2_FIELD_ANY
-#        if self.xioctl(v4l2.VIDIOC_S_FMT, &format) == -1:
-#            self.close()
-#            raise Exception("Could not set v4l2 format")
-
-#    cdef set_streamparm(self):
-#        cdef v4l2.v4l2_streamparm streamparm
-#        streamparm.type = v4l2.V4L2_BUF_TYPE_VIDEO_CAPTURE
-#        streamparm.parm.capture.timeperframe.numerator = self.frame_rate[0]
-#        streamparm.parm.capture.timeperframe.denominator = self.frame_rate[1]
-#        if self.xioctl(v4l2.VIDIOC_S_PARM, &streamparm) == -1:
-#            self.close()
-#            raise Exception("Could not set v4l2 parameters")
-
-
-#    cdef get_format(self):
-#        cdef v4l2.v4l2_format format
-#        format.type = v4l2.V4L2_BUF_TYPE_VIDEO_CAPTURE
-#        if self.xioctl(v4l2.VIDIOC_G_FMT, &format) == -1:
-#            self.close()
-#            raise Exception("Could not get v4l2 format")
-#        else:
-#            self._frame_size = format.fmt.pix.width,format.fmt.pix.height
-#            self._transport_format = format.fmt.pix.pixelformat
-
-#    cdef get_streamparm(self):
-#        cdef v4l2.v4l2_streamparm streamparm
-#        streamparm.type = v4l2.V4L2_BUF_TYPE_VIDEO_CAPTURE
-#        if self.xioctl(v4l2.VIDIOC_G_PARM, &streamparm) == -1:
-#            self.close()
-#            raise Exception("Could not get v4l2 parameters")
-#        else:
-#            self._frame_rate = streamparm.parm.capture.timeperframe.numerator,streamparm.parm.capture.timeperframe.denominator
-
-
-#    property transport_formats:
-#        def __get__(self):
-#            cdef v4l2.v4l2_fmtdesc fmt
-#            if self._transport_formats is None:
-#                fmt.type =  v4l2.V4L2_BUF_TYPE_VIDEO_CAPTURE
-#                fmt.index = 0
-#                formats = []
-#                while self.xioctl(v4l2.VIDIOC_ENUM_FMT,&fmt)>=0:
-#                    formats.append( fourcc_string(fmt.pixelformat ) )
-#                    fmt.index += 1
-#                logger.debug("Reading Transport formats: %s"%formats)
-#                self._transport_formats = formats
-#            return self._transport_formats
-
-#        def __set__(self,val):
-#            raise Exception("Read Only")
-
-
-#    property frame_sizes:
-#        def __get__(self):
-#            cdef  v4l2.v4l2_frmsizeenum frmsize
-#            if self._frame_sizes is None:
-#                frmsize.pixel_format = fourcc_u32(self.transport_format)
-#                frmsize.index = 0
-#                sizes = []
-#                while self.xioctl(v4l2.VIDIOC_ENUM_FRAMESIZES, &frmsize) >= 0:
-#                    if frmsize.type == v4l2.V4L2_FRMSIZE_TYPE_DISCRETE:
-#                        sizes.append((frmsize.discrete.width,frmsize.discrete.height))
-#                    elif frmsize.type == v4l2.V4L2_FRMSIZE_TYPE_STEPWISE:
-#                        sizes.append( (frmsize.stepwise.max_width, frmsize.stepwise.max_height) )
-#                    frmsize.index+=1
-#                logger.debug("Reading frame sizes@'%s': %s"%(self.transport_format,sizes) )
-#                self._frame_sizes = sizes
-
-#            return self._frame_sizes
-
-#        def __set__(self,val):
-#            raise Exception("Read Only")
-
-
-#    property frame_rates:
-#        def __get__(self):
-#            cdef v4l2.v4l2_frmivalenum interval
-
-#            if self._frame_rates is None:
-#                interval.pixel_format = fourcc_u32(self.transport_format)
-#                interval.width,interval.height = self.frame_size
-#                interval.index = 0
-#                self.xioctl(v4l2.VIDIOC_ENUM_FRAMEINTERVALS,&interval)
-#                rates = []
-#                if interval.type == v4l2.V4L2_FRMIVAL_TYPE_DISCRETE:
-#                    while self.xioctl(v4l2.VIDIOC_ENUM_FRAMEINTERVALS,&interval) >= 0:
-#                        rates.append((interval.discrete.numerator,interval.discrete.denominator))
-#                        interval.index += 1
-#                #non-discreete rates are very seldom, the second and third case should never happen
-#                elif interval.type == v4l2.V4L2_FRMIVAL_TYPE_STEPWISE or interval.type == v4l2.V4L2_FRMIVAL_TYPE_CONTINUOUS:
-#                    minval = float(interval.stepwise.min.numerator)/interval.stepwise.min.denominator
-#                    maxval = float(interval.stepwise.max.numerator)/interval.stepwise.max.denominator
-#                    if interval.type == v4l2.V4L2_FRMIVAL_TYPE_CONTINUOUS:
-#                        stepval = 1
-#                    else:
-#                        stepval = float(interval.stepwise.step.numerator)/interval.stepwise.step.denominator
-#                    rates = range(minval,maxval,stepval)
-#                logger.debug("Reading frame rates@'%s'@%s: %s"%(self.transport_format,self.frame_size,rates) )
-#                self._frame_rates = rates
-
-#            return self._frame_rates
-
-#        def __set__(self,val):
-#            raise Exception("Read Only")
-
-
-#    property transport_format:
-#        def __get__(self):
-#            return fourcc_string(self._transport_format)
-
-#        def __set__(self,val):
-#            self._transport_format = fourcc_u32(val)
-#            self.stop()
-#            self.deinit_buffers()
-#            self.set_format()
-#            self.get_format()
-#            self.set_streamparm()
-#            self.get_streamparm()
-#            self._frame_sizes = None
-#            self._frame_rates = None
-
-
-#    property frame_size:
-#        def __get__(self):
-#            return self._frame_size
-#        def __set__(self,val):
-#            self._frame_size = val
-#            self._frame_rates = None
-#            self.stop()
-#            self.deinit_buffers()
-#            self.set_format()
-#            self.get_format()
-#            self.set_streamparm()
-#            self.get_streamparm()
-
-#    property frame_rate:
-#        def __get__(self):
-#            return self._frame_rate
-#        def __set__(self,val):
-#            self._frame_rate = val
-#            self.stop()
-#            self.deinit_buffers()
-#            self.set_streamparm()
-#            self.get_streamparm()
-
 
 
 
@@ -814,85 +687,6 @@ cdef inline int interval_to_fps(int interval):
 #                logger.error("Could not set control")
 #        return control.value
 
-
-
-
-
-####Utiliy functions
-
-#def list_devices():
-#    file_names = [x for x in oslistdir("/dev") if x.startswith("video")]
-#    file_names.sort()
-#    devices = []
-#    for file_name in file_names:
-#        path = "/dev/" + file_name
-#        try:
-#            cap = Cap_Info(path)
-#            devices.append(cap.get_info())
-#            cap.close()
-#        except IOError:
-#            logger.error("Could not get device info for %s"%path)
-#    return devices
-
-
-
-
-#cdef class Cap_Info:
-#    """
-#    Video Capture class used to make device list.
-
-#    """
-#    cdef int dev_handle
-#    cdef bytes dev_name
-
-#    def __cinit__(self,dev_name):
-#        pass
-
-#    def __init__(self,dev_name):
-#        self.dev_name = dev_name
-#        self.dev_handle = self.open_device()
-
-
-#    def close(self):
-#        self.close_device()
-
-#    def __dealloc__(self):
-#        if self.dev_handle != -1:
-#            self.close()
-
-#    def get_info(self):
-#        cdef v4l2.v4l2_capability caps
-#        if self.xioctl(v4l2.VIDIOC_QUERYCAP,&caps) !=0:
-#            raise Exception("VIDIOC_QUERYCAP error. Could not get devices info.")
-
-#        return {'dev_path':self.dev_name,'driver':caps.driver,'dev_name':caps.card,'bus_info':caps.bus_info}
-
-#    cdef xioctl(self, int request, void *arg):
-#        cdef int r
-#        while True:
-#            r = ioctl(self.dev_handle, request, arg)
-#            if -1 != r or EINTR != errno:
-#                break
-#        return r
-
-#    cdef open_device(self):
-#        cdef stat.struct_stat st
-#        cdef int dev_handle = -1
-#        if -1 == stat.stat(<char *>self.dev_name, &st):
-#            raise Exception("Cannot find '%s'. Error: %d, %s\n"%(self.dev_name, errno, strerror(errno) ))
-#        if not stat.S_ISCHR(st.st_mode):
-#            raise Exception("%s is no device\n"%self.dev_name)
-
-#        dev_handle = fcntl.open(<char *>self.dev_name, fcntl.O_RDWR | fcntl.O_NONBLOCK, 0)
-#        if -1 == dev_handle:
-#            raise Exception("Cannot open '%s'. Error: %d, %s\n"%(self.dev_name, errno, strerror(errno) ))
-#        return dev_handle
-
-
-#    cdef close_device(self):
-#        if unistd.close(self.dev_handle) == -1:
-#            raise Exception("Could not close device. Handle: '%s'. Error: %d, %s\n"%(self.dev_handle, errno, strerror(errno) ))
-#        self.dev_handle = -1
 
 
 #def get_sys_time_monotonic():
