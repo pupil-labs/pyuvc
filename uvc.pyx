@@ -314,6 +314,7 @@ cdef class Capture:
 
     cdef tuple _active_mode
     cdef list _available_modes
+    cdef dict _info
 
     def __cinit__(self,dev_uid):
         self.dev = NULL
@@ -324,6 +325,7 @@ cdef class Capture:
         self.strmh = NULL
         self._available_modes = []
         self._active_mode = None,None,None
+        self._info = {}
 
     def __init__(self,dev_uid):
 
@@ -357,6 +359,22 @@ cdef class Capture:
             if dev_uid == '%s:%s'%(bus_number,device_address):
                 logger.debug("Found device that mached uid:'%s'"%dev_uid)
                 uvc.uvc_ref_device(dev)
+                if (uvc.uvc_get_device_descriptor(dev, &desc) == uvc.UVC_SUCCESS):
+                            product = desc.product or "unknown"
+                            manufacturer = desc.manufacturer or "unknown"
+                            serialNumber = desc.serialNumber or "unknown"
+                            idProduct,idVendor = desc.idProduct,desc.idVendor
+                            device_address = uvc.uvc_get_device_address(dev)
+                            bus_number = uvc.uvc_get_bus_number(dev)
+                            self._info = {'name':product,
+                                            'manufacturer':manufacturer,
+                                            'serialNumber':serialNumber,
+                                            'idProduct':idProduct,
+                                            'idVendor':idVendor,
+                                            'device_address':device_address,
+                                            'bus_number':bus_number,
+                                            'uid':'%s:%s'%(bus_number,device_address)}
+                uvc.uvc_free_device_descriptor(desc)
                 break
             idx +=1
 
@@ -397,7 +415,9 @@ cdef class Capture:
         self._start()
 
     def print_info(self):
-        pass
+        print "Capture device"
+        for k,v in self._info.iteritems():
+            print '\t %s:%s'%(k,v)
 
     cdef _configure_stream(self,mode=(640,480,30)):
         cdef int status
@@ -505,16 +525,16 @@ cdef class Capture:
         cdef uvc.uvc_extension_unit_t  *extension_unit = uvc.uvc_get_extension_units(self.devh)
 
         cdef uvc.uint8_t data[8]
-        print 'ext units'
+        #print 'ext units'
         while extension_unit !=NULL:
             bUnitID = extension_unit.bUnitID
-            print bUnitID,bin(extension_unit.bmControls)
+            #print bUnitID,bin(extension_unit.bmControls)
             extension_unit = extension_unit.next
 
-        print 'input terminals'
+        #print 'input terminals'
         while input_terminal !=NULL:
             bmControls = input_terminal.bmControls
-            print bmControls,bin(input_terminal.bmControls)
+            #print bmControls,bin(input_terminal.bmControls)
             d_len = uvc.uvc_get_ctrl_len(self.devh,bUnitID,1)
             #print uvc.uvc_get_ctrl(self.devh,bUnitID,1)
             input_terminal = input_terminal.next
@@ -573,7 +593,14 @@ cdef class Capture:
         def __get__(self):
             return self._active_mode[2]
         def __set__(self,val):
-            self.frame_mode = self._active_mode[:2]+(val,)
+            if  self._configured:
+                self.frame_mode = self._active_mode[:2]+(val,)
+            else:
+                raise Exception('set frame size first.')
+
+    property frame_sizes:
+        def __get__(self):
+            return [m['size'] for m in self._available_modes]
 
     property frame_rates:
         def __get__(self):
@@ -587,8 +614,7 @@ cdef class Capture:
         def __get__(self):
             return self._active_mode
         def __set__(self,mode):
-            if self._stream_on or 1:
-                self._stop()
+            self._stop()
             logger.debug('Setting mode: %s,%s,%s'%mode)
             self._configure_stream(mode)
 
@@ -599,6 +625,10 @@ cdef class Capture:
                 for r in m['rates']:
                     modes.append(m['size']+(r,))
             return modes
+
+    property name:
+        def __get__(self):
+            return self._info['name']
 
 cdef void on_status_update(uvc.uvc_status_class status_class,
                         int event,
