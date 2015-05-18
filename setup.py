@@ -7,6 +7,7 @@ from Cython.Build import cythonize
 import glob
 
 libs = []
+extra_link_args = []
 if platform.system() == 'Darwin':
     try:
         tj_lib = '/usr/local/opt/jpeg-turbo/lib/libturbojpeg.a'
@@ -19,6 +20,7 @@ elif platform.system() == 'Linux':
     except IndexError:
        raise Exception("Please install libturbojpeg")
     libs  = ['rt']
+    extra_link_args = ['-Wl,-R/usr/local/lib/']
 elif platform.system() == 'Windows':
     raise NotImplementedError("please fix me.")
 
@@ -30,8 +32,8 @@ extensions = [
     Extension(  name="uvc",
                 sources=['uvc.pyx'],
                 include_dirs =  [numpy.get_include(),'/usr/local/opt/jpeg-turbo/include/'],
-                libraries = ['uvc',]+libs, #'usb-1.0'
-                extra_link_args=[],
+                libraries = ['uvc',]+libs, 
+                extra_link_args=extra_link_args,
                 extra_objects = [tj_lib],
                 extra_compile_args=[]
             ),
