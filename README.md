@@ -1,12 +1,12 @@
 pyuvc
 =======
 
-Python bindings for Video4Linux2 API using [libjpegturbo](http://libjpeg-turbo.virtualgl.org/) (utilizing the tubojpeg api).
+Python bindings for [libuvc](https://github.com/ktossell/libuvc) with super fast jpeg decompression using [libjpegturbo](http://libjpeg-turbo.virtualgl.org/) (utilizing the tubojpeg api).
 
-
+* cross platform access to UVC capture devices.
 * Full access to all uvc settings (Zoom,Focus,Brightness,etc.)
 * Full access to all stream and format parameters (rates,sizes,etc.)
-* Enumerate all capture devices with list_devices()
+* Enumerate all capture devices with device_list()
 * Capture instance will always grab mjpeg conpressed frames from cameras.
 
 Image data is returned as `Frame` object. This object will decompress and convert on the fly when image data is requested.
