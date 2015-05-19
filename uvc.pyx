@@ -421,37 +421,27 @@ cdef class Capture:
 
     cdef _configure_stream(self,mode=(640,480,30)):
         cdef int status
+
+        if self._stream_on:
+            self._stop()
+
         status = uvc.uvc_get_stream_ctrl_format_size( self.devh, &self.ctrl,
                                                       uvc.UVC_FRAME_FORMAT_COMPRESSED,
                                                       mode[0],mode[1],mode[2] )
         if status != uvc.UVC_SUCCESS:
             raise Exception("Can't get stream control: Error:'%s'."%uvc_error_codes[status])
-
-        status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl)
-        if status != uvc.UVC_SUCCESS:
-            raise Exception("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
         self._configured = 1
         self._active_mode = mode
-
-
-    #cdef _reconfigure_stream(self,mode):
-    #    cdef int status
-    #    status = uvc.uvc_get_stream_ctrl_format_size(self.devh, &self.ctrl,
-    #                                                  uvc.UVC_FRAME_FORMAT_COMPRESSED,
-    #                                                  mode[0],mode[1],mode[2])
-    #    if status != uvc.UVC_SUCCESS:
-    #        raise Exception("Can't get stream control: Error:'%s'."%uvc_error_codes[status])
-
-    #    status = uvc.set_uvc_stream_ctrl(self.strmh,&self.ctrl)
-    #    if status != uvc.UVC_SUCCESS:
-    #        raise Exception("Can't reconfigure stream : Error:'%s'."%uvc_error_codes[status])
-    #    self._active_mode = mode
 
 
     cdef _start(self):
         cdef int status
         if not self._configured:
             self._configure_stream()
+
+        status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl)
+        if status != uvc.UVC_SUCCESS:
+            raise Exception("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
 
         status = uvc.uvc_stream_start(self.strmh, NULL, NULL,0)
         if status != uvc.UVC_SUCCESS:
@@ -460,14 +450,14 @@ cdef class Capture:
         logger.debug("Stream start.")
 
     cdef _stop(self):
-        #cdef int status = 0
-        #status = uvc.uvc_stream_stop(self.strmh)
-        #if status != uvc.UVC_SUCCESS:
-        #    raise Exception("Can't stop  stream: Error:'%s'."%uvc_error_codes[status])
-        #print "stopped"
-        #uvc.uvc_stream_close(self.strmh)
-        #print 'closed'
-        uvc.uvc_stop_streaming(self.devh)
+        cdef int status = 0
+        status = uvc.uvc_stream_stop(self.strmh)
+        if status != uvc.UVC_SUCCESS:
+            raise Exception("Can't stop  stream: Error:'%s'."%uvc_error_codes[status])
+        print "stream stopped"
+        uvc.uvc_stream_close(self.strmh)
+        print 'stream closed'
+        #uvc.uvc_stop_streaming(self.devh)
         self._stream_on = 0
         logger.debug("Stream stop.")
 
@@ -614,7 +604,6 @@ cdef class Capture:
         def __get__(self):
             return self._active_mode
         def __set__(self,mode):
-            self._stop()
             logger.debug('Setting mode: %s,%s,%s'%mode)
             self._configure_stream(mode)
 
