@@ -51,8 +51,8 @@ sudo pip install cython
 
 ###udev rules for sunning as normal user:
 ```
-echo 'SUBSYSTEM=="usb", ACTION=="add", ATTRS{bDeviceClass}=="239", ATTRS{bDeviceSubClass}=="2",MODE="0660", GROUP="plugdev"' | sudo tee /etc/udev/rules.d/81-libuvc.rules 
-sudo service udev restart
+echo 'SUBSYSTEM=="usb", ACTION=="add", ENV{DEVTYPE}=="usb_device", GROUP="plugdev", MODE="0664"' | sudo tee /etc/udev/rules.d/10-libuvc.rules 
+sudo udevadm trigger
 ```
 
 ##Dependencies Mac
