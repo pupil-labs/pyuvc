@@ -442,7 +442,6 @@ cdef class Capture:
         status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl)
         if status != uvc.UVC_SUCCESS:
             raise Exception("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
-
         status = uvc.uvc_stream_start(self.strmh, NULL, NULL,0)
         if status != uvc.UVC_SUCCESS:
             raise Exception("Can't start isochronous stream: Error:'%s'."%uvc_error_codes[status])
@@ -453,22 +452,24 @@ cdef class Capture:
         cdef int status = 0
         status = uvc.uvc_stream_stop(self.strmh)
         if status != uvc.UVC_SUCCESS:
-            raise Exception("Can't stop  stream: Error:'%s'."%uvc_error_codes[status])
-        print "stream stopped"
+            #raise Exception("Can't stop  stream: Error:'%s'."%uvc_error_codes[status])
+            logger.error("Can't stop stream: Error:'%s'. Will ignore this and try to continue."%uvc_error_codes[status])
+        else:
+            logger.debug("Stream stopped")
         uvc.uvc_stream_close(self.strmh)
-        print 'stream closed'
+        logger.debug("Stream closed")
         #uvc.uvc_stop_streaming(self.devh)
         self._stream_on = 0
         logger.debug("Stream stop.")
 
     def get_frame_robust(self):
-        cdef int a,r, attempts = 3,restarts = 2
+        cdef int a,r, attempts = 4,restarts = 2
         for r in range(restarts):
-            for a in range(attempts)[::-1]:
+            for a in range(attempts):
                 try:
                     frame = self.get_frame()
                 except CaptureError as e:
-                    logger.warning('Could not get Frame. Error: "%s". Trying %s more times.'%(e.message,a))
+                    logger.debug('Could not get Frame. Error: "%s". Tried %s times.'%(e.message,a))
                 else:
                     return frame
             logger.warning("Could not grab frame. Restarting device")
