@@ -380,7 +380,6 @@ cdef class Capture:
 
         uvc.uvc_free_device_list(dev_list, 1)
         if dev == NULL:
-            uvc.uvc_exit(self.ctx)
             raise Exception("Device with uid: '%s' not found"%dev_uid)
 
 
@@ -388,7 +387,6 @@ cdef class Capture:
         self.dev = dev
         error = uvc.uvc_open(self.dev,&self.devh)
         if error != uvc.UVC_SUCCESS:
-            uvc.uvc_exit(self.ctx)
             raise Exception("could not open device. Error:%s"%uvc_error_codes[error])
         logger.debug("Device '%s' opended."%dev_uid)
 
