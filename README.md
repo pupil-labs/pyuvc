@@ -49,6 +49,12 @@ sudo make install
 sudo pip install cython
 ```
 
+###udev rules for sunning as normal user:
+```
+echo 'SUBSYSTEM=="usb", ACTION=="add", ATTRS{bDeviceClass}=="239", ATTRS{bDeviceSubClass}=="2",MODE="0660", GROUP="plugdev"' | sudo tee /etc/udev/rules.d/81-libuvc.rules 
+sudo service udev restart
+```
+
 ##Dependencies Mac
 
 ### libjpeg-turbo
