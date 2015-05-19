@@ -18,18 +18,36 @@ The `Frame` class has caching build in to avoid double decompression or conversi
 ## Example
 ```python
 import uvc
-cap = uvc.Capture("/video/dev0")
-print cap.frame_rates
-frame = cap.get_frame()
+import logging
+logging.basicConfig(level=logging.INFO)
 
-gray_numpy_array = frame.gray
-bgr_numpy_array = frame.bgr
-jpeg_buffer_handle = frame.jpeg_buffer
-
+dev_list =  uvc.device_list()
+print dev_list
+cap = uvc.Capture(dev_list[0]['uid'])
+print cap.avaible_modes
+cap.print_info()
+for x in range(10):
+	print x
+	cap.frame_mode = (640,480,30)
+	for x in range(100):
+		frame = cap.get_frame_robust()
+		print frame.img.shape
+		#cv2.imshow("img",frame.gray)
+		#cv2.waitKey(1)
 cap = None
 ```
 
 ##Dependencies Linux
+
+###libuvc
+```
+git clone https://github.com/pupil-labs/libuvc
+cd libuvc
+mkdir build
+cd build
+cmake ..
+make && sudo make install
+```
 
 ### libjpeg-turbo
 Needs to be build with fpic!
@@ -49,13 +67,23 @@ sudo make install
 sudo pip install cython
 ```
 
-###udev rules for sunning as normal user:
+###udev rules for running as normal user:
 ```
 echo 'SUBSYSTEM=="usb",  ENV{DEVTYPE}=="usb_device", GROUP="plugdev", MODE="0664"' | sudo tee /etc/udev/rules.d/10-libuvc.rules > /dev/null 
 sudo udevadm trigger
 ```
 
 ##Dependencies Mac
+
+###libuvc
+```
+git clone https://github.com/pupil-labs/libuvc
+cd libuvc
+mkdir build
+cd build
+cmake ..
+make && sudo make install
+```
 
 ### libjpeg-turbo
 
