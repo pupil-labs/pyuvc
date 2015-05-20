@@ -24,15 +24,12 @@ elif platform.system() == 'Linux':
 elif platform.system() == 'Windows':
     raise NotImplementedError("please fix me.")
 
-#mac:
-    # LDFLAGS:  -L/usr/local/opt/jpeg-turbo/lib
-    # CPPFLAGS: -I/usr/local/opt/jpeg-turbo/include
 
 extensions = [
     Extension(  name="uvc",
                 sources=['uvc.pyx'],
                 include_dirs =  [numpy.get_include(),'/usr/local/opt/jpeg-turbo/include/'],
-                libraries = ['uvc',]+libs, 
+                libraries = ['uvc',]+libs,
                 extra_link_args=extra_link_args,
                 extra_objects = [tj_lib],
                 extra_compile_args=[]
