@@ -293,6 +293,8 @@ def device_list():
     uvc.uvc_exit(ctx)
     return devices
 
+include 'controls.pxi'
+
 
 cdef class Capture:
     """
@@ -315,6 +317,7 @@ cdef class Capture:
     cdef tuple _active_mode
     cdef list _available_modes
     cdef dict _info
+    cdef list controls
 
     def __cinit__(self,dev_uid):
         self.dev = NULL
@@ -326,6 +329,7 @@ cdef class Capture:
         self._available_modes = []
         self._active_mode = None,None,None
         self._info = {}
+        self.controls = []
 
     def __init__(self,dev_uid):
 
@@ -436,7 +440,6 @@ cdef class Capture:
         cdef int status
         if not self._configured:
             self._configure_stream()
-
         status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl)
         if status != uvc.UVC_SUCCESS:
             raise Exception("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
@@ -513,20 +516,41 @@ cdef class Capture:
         cdef uvc.uvc_processing_unit_t  *processing_unit = uvc.uvc_get_processing_units(self.devh)
         cdef uvc.uvc_extension_unit_t  *extension_unit = uvc.uvc_get_extension_units(self.devh)
 
-        cdef uvc.uint8_t data[8]
+        cdef Control control
         #print 'ext units'
-        while extension_unit !=NULL:
-            bUnitID = extension_unit.bUnitID
-            #print bUnitID,bin(extension_unit.bmControls)
-            extension_unit = extension_unit.next
+        #while extension_unit !=NULL:
+        #    bUnitID = extension_unit.bUnitID
+        #    print bUnitID,bin(extension_unit.bmControls)
+        #    extension_unit = extension_unit.next
 
-        #print 'input terminals'
+        avaible_controls_per_unit = {}
+
+        print 'input terminals'
         while input_terminal !=NULL:
-            bmControls = input_terminal.bmControls
-            #print bmControls,bin(input_terminal.bmControls)
-            d_len = uvc.uvc_get_ctrl_len(self.devh,bUnitID,1)
+            bmControls = input_terminal.bTerminalID
+            avaible_controls_per_unit['input_terminal'] = input_terminal.bmControls
+            #d_len = uvc.uvc_get_ctrl_len(self.devh,bUnitID,1)
             #print uvc.uvc_get_ctrl(self.devh,bUnitID,1)
             input_terminal = input_terminal.next
+
+        print 'processing_unit'
+        while processing_unit !=NULL:
+            bmControls = processing_unit.bUnitID
+            avaible_controls_per_unit['processing_unit'] = processing_unit.bmControls
+            #d_len = uvc.uvc_get_ctrl_len(self.devh,bUnitID,1)
+            #print uvc.uvc_get_ctrl(self.devh,bUnitID,1)
+
+            processing_unit = processing_unit.next
+
+
+        for std_ctl in standard_ctrl_units:
+            if std_ctl['bit_mask'] & avaible_controls_per_unit[std_ctl['unit']]:
+                logger.debug('Adding "%s" as controll to Capture device'%std_ctl['display_name'])
+                control = Control(**std_ctl)
+                control.devh = self.devh
+                control.init_vars()
+                self.controls.append(control)
+
 
         #uvc.PyEval_InitThreads()
         #uvc.uvc_set_status_callback(self.devh, on_status_update,<void*>self)

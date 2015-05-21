@@ -8,12 +8,70 @@ cdef extern from "libusb-1.0/libusb.h":
 cdef extern from "Python.h":
     void PyEval_InitThreads()
 
+ctypedef int uint8_t
+ctypedef int uint16_t
+ctypedef int uint32_t
+ctypedef int uint64_t
+
+cdef enum ctrl_bit_mask_processing_unit:
+    UVC_PU_BRIGHTNESS_CONTROL = 1 << 0
+    UVC_PU_CONTRAST_CONTROL = 1 << 1
+    UVC_PU_HUE_CONTROL = 1 << 2
+    UVC_PU_SATURATION_CONTROL = 1 << 3
+    UVC_PU_SHARPNESS_CONTROL = 1 << 4
+    UVC_PU_GAMMA_CONTROL = 1 << 5
+    UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL = 1 << 6
+    UVC_PU_WHITE_BALANCE_COMPONENT_CONTROL = 1 << 7
+    UVC_PU_BACKLIGHT_COMPENSATION_CONTROL = 1 << 8
+    UVC_PU_GAIN_CONTROL = 1 << 9
+    UVC_PU_POWER_LINE_FREQUENCY_CONTROL = 1 << 10
+    UVC_PU_HUE_AUTO_CONTROL = 1 << 11
+    UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL = 1 << 12
+    UVC_PU_WHITE_BALANCE_COMPONENT_AUTO_CONTROL = 1 << 13
+    UVC_PU_DIGITAL_MULTIPLIER_CONTROL = 1 << 14
+    UVC_PU_DIGITAL_MULTIPLIER_LIMIT_CONTROL = 1 << 15
+    UVC_PU_ANALOG_VIDEO_STANDARD_CONTROL = 1 << 16
+    UVC_PU_ANALOG_LOCK_STATUS_CONTROL = 1 << 17
+
+cdef enum ctrl_bit_mask_input_terminal:
+    UVC_CT_SCANNING_MODE_CONTROL = 1 << 0
+    UVC_CT_AE_MODE_CONTROL = 1 << 1
+    UVC_CT_AE_PRIORITY_CONTROL = 1 << 2
+    UVC_CT_EXPOSURE_TIME_ABSOLUTE_CONTROL = 1 << 3
+    UVC_CT_EXPOSURE_TIME_RELATIVE_CONTROL = 1 << 4
+    UVC_CT_FOCUS_ABSOLUTE_CONTROL = 1 << 5
+    UVC_CT_FOCUS_RELATIVE_CONTROL = 1 << 6
+    UVC_CT_IRIS_ABSOLUTE_CONTROL = 1 << 7
+    UVC_CT_IRIS_RELATIVE_CONTROL = 1 << 8
+    UVC_CT_ZOOM_ABSOLUTE_CONTROL = 1 << 9
+    UVC_CT_ZOOM_RELATIVE_CONTROL = 1 << 10
+    UVC_CT_PANTILT_ABSOLUTE_CONTROL = 1 << 11
+    UVC_CT_PANTILT_RELATIVE_CONTROL = 1 << 12
+    UVC_CT_ROLL_ABSOLUTE_CONTROL = 1 << 13
+    UVC_CT_ROLL_RELATIVE_CONTROL = 1 << 14
+    UVC_CT_FOCUS_AUTO_CONTROL = 1 << 17
+    UVC_CT_PRIVACY_CONTROL = 1 << 18
+
+
+#/** Converts an unaligned four-byte little-endian integer into an int32 */
+cdef inline int DW_TO_INT(uint8_t *p):
+    return (p)[0] | ((p)[1] << 8) | ((p)[2] << 16) | ((p)[3] << 24)
+#/** Converts an unaligned two-byte little-endian integer into an int16 */
+cdef inline int SW_TO_SHORT(uint8_t *p):
+    return (p)[0] | ((p)[1] << 8)
+#/** Converts an int16 into an unaligned two-byte little-endian integer */
+cdef inline void SHORT_TO_SW(short s, uint8_t *p):
+    p[0] = s
+    p[1] = s >> 8
+#/** Converts an int32 into an unaligned four-byte little-endian integer */
+cdef inline void INT_TO_DW(int i, uint8_t *p):
+    p[0] = i
+    p[1] = i >> 8
+    p[2] = i >> 16
+    p[3] = i >> 24
+
 cdef extern from  "libuvc/libuvc.h":
 
-    ctypedef int uint8_t
-    ctypedef int uint16_t
-    ctypedef int uint32_t
-    ctypedef int uint64_t
 
     cdef enum uvc_error:
         UVC_SUCCESS
@@ -130,7 +188,15 @@ cdef extern from  "libuvc/libuvc.h":
 
 
     cdef enum uvc_req_code:
-        pass
+        UVC_RC_UNDEFINED = 0x00
+        UVC_SET_CUR = 0x01
+        UVC_GET_CUR = 0x81
+        UVC_GET_MIN = 0x82
+        UVC_GET_MAX = 0x83
+        UVC_GET_RES = 0x84
+        UVC_GET_LEN = 0x85
+        UVC_GET_INFO = 0x86
+        UVC_GET_DEF = 0x87
 
     cdef enum uvc_device_power_mode:
         pass
@@ -214,7 +280,11 @@ cdef extern from  "libuvc/libuvc.h":
 
 
     cdef struct uvc_processing_unit:
-        pass
+        uvc_processing_unit *prev
+        uvc_processing_unit *next
+        uint8_t bUnitID
+        uint8_t bSourceID
+        uint64_t bmControls
     ctypedef uvc_processing_unit uvc_processing_unit_t
 
     cdef struct uvc_extension_unit:
