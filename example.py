@@ -9,8 +9,8 @@ import numpy as np
 
 
 dev_list =  uvc.device_list()
-# print dev_list
-cap = uvc.Capture(dev_list[1]['uid'])
+print dev_list
+cap = uvc.Capture(dev_list[0]['uid'])
 print cap.name
 # print cap.avaible_modes
 cap.print_info()

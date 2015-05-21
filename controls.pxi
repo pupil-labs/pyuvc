@@ -1,12 +1,8 @@
 
-
-uvc_input_terminal_id = 1
-uvc_processing_unit_id = 1
-
 standard_ctrl_units = [
 {
 'display_name': 'Auto Exposure Mode',
-'unit': 'processing_unit',
+'unit': 'input_terminal',
 'control_id': 0x02 ,
 'offset': 0 ,
 'data_len': 1 ,
@@ -17,7 +13,7 @@ standard_ctrl_units = [
 ,
 {
 'display_name': 'Auto Exposure Priority',
-'unit': 'processing_unit',
+'unit': 'input_terminal',
 'control_id': 0x03 ,
 'offset': 0 ,
 'data_len': 1 ,
@@ -28,7 +24,7 @@ standard_ctrl_units = [
 ,
 {
 'display_name': 'Absolute Exposure Time',
-'unit': 'processing_unit',
+'unit': 'input_terminal',
 'control_id': 0x04 ,
 'offset': 0 ,
 'data_len': 4 ,
@@ -49,13 +45,13 @@ cdef class Control:
     cdef int _value,min_val,max_val,step,default,buffer_len,info_bit_mask
     cdef object d_type
 
-    def __cinit__(self,display_name,unit,control_id,offset,data_len,bit_mask,d_type,doc):
+    def __cinit__(self,unit_id,display_name,unit,control_id,offset,data_len,bit_mask,d_type,doc):
         pass
 
-    def __init__(self,display_name,unit,control_id,offset,data_len,bit_mask,d_type,doc):
+    def __init__(self,unit_id,display_name,unit,control_id,offset,data_len,bit_mask,d_type,doc):
         self.devh = NULL
         self.display_name = display_name
-        self.unit_id = {'processing_unit':3,'input_terminal':1}[unit]
+        self.unit_id = unit_id
         self.control_id = control_id
         self.offset = offset
         self.data_len = data_len
@@ -65,12 +61,13 @@ cdef class Control:
 
 
     cdef init_vars(self):
+        print self.unit_id, self.control_id
         self.buffer_len = uvc.uvc_get_ctrl_len(self.devh,self.unit_id, self.control_id)
         if self.buffer_len < 1:
             raise Exception("Error: %s"%uvc_error_codes[self.buffer_len])
 
         print self.buffer_len
-
+        #self.buffer_len = self._uvc_get(uvc.UVC_GET_LEN)
         self.min_val = self._uvc_get(uvc.UVC_GET_MIN)
         self.max_val = self._uvc_get(uvc.UVC_GET_MAX)
         self.step = self._uvc_get(uvc.UVC_GET_RES)
