@@ -71,7 +71,7 @@ before attempting to change this setting.'
 
 cdef class Control:
     cdef uvc.uvc_device_handle_t *devh
-    cdef bytes display_name,doc
+    cdef public bytes display_name,doc,unit
     cdef int unit_id,control_id,offset,data_len,bit_mask
     cdef int _value,min_val,max_val,step,default,buffer_len,info_bit_mask
     cdef public object d_type
@@ -114,6 +114,7 @@ cdef class Control:
         self.devh = cap.devh
         self.display_name = display_name
         self.unit_id = unit_id
+        self.unit = unit
         self.control_id = control_id
         self.offset = offset
         self.data_len = data_len
