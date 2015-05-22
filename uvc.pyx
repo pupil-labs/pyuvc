@@ -542,12 +542,10 @@ cdef class Capture:
             if std_ctl['bit_mask'] & avaible_controls_per_unit[std_ctl['unit']]:
 
                 logger.debug('Adding "%s" as controll to Capture device'%std_ctl['display_name'])
-                std_ctl['unit_id'] = id_per_unit[std_ctl['unit']]
 
-                #we need to defer __init__ as we cannot pass the handle before
+                std_ctl['unit_id'] = id_per_unit[std_ctl['unit']]
                 control= Control(cap = self,**std_ctl)
-                #control = Control.__new__(Control,**std_ctl)
-                #control.devh = self.devh
+
                 self.controls.append(control)
 
 
@@ -654,79 +652,6 @@ cdef void on_status_update(uvc.uvc_status_class status_class,
 
 cdef inline int interval_to_fps(int interval):
     return int(10000000./interval)
-
-
-
-#    def enum_controls(self):
-#        cdef v4l2.v4l2_queryctrl queryctrl
-#        queryctrl.id = v4l2.V4L2_CTRL_CLASS_USER | v4l2.V4L2_CTRL_FLAG_NEXT_CTRL
-#        controls = []
-#        control_type = {v4l2.V4L2_CTRL_TYPE_INTEGER:'int',
-#                        v4l2.V4L2_CTRL_TYPE_BOOLEAN:'bool',
-#                        v4l2.V4L2_CTRL_TYPE_MENU:'menu'}
-
-#        while (0 == self.xioctl(v4l2.VIDIOC_QUERYCTRL, &queryctrl)):
-
-#            if v4l2.V4L2_CTRL_ID2CLASS(queryctrl.id) != v4l2.V4L2_CTRL_CLASS_CAMERA:
-#                #we ignore this conditon
-#                pass
-#            control = {}
-#            control['name'] = queryctrl.name
-#            control['type'] = control_type[queryctrl.type]
-#            control['id'] = queryctrl.id
-#            control['min'] = queryctrl.minimum
-#            control['max'] = queryctrl.maximum
-#            control['step'] = queryctrl.step
-#            control['default'] = queryctrl.default_value
-#            control['value'] = self.get_control(queryctrl.id)
-#            if queryctrl.flags & v4l2.V4L2_CTRL_FLAG_DISABLED:
-#                control['disabled'] = True
-#            else:
-#                control['disabled'] = False
-
-#                if queryctrl.type == v4l2.V4L2_CTRL_TYPE_MENU:
-#                    control['menu'] = self.enumerate_menu(queryctrl)
-
-#            controls.append(control)
-
-#            queryctrl.id |= v4l2.V4L2_CTRL_FLAG_NEXT_CTRL
-
-#        if errno != EINVAL:
-#            logger.error("VIDIOC_QUERYCTRL")
-#            # raise Exception("VIDIOC_QUERYCTRL")
-#        return controls
-
-#    cdef enumerate_menu(self,v4l2.v4l2_queryctrl queryctrl):
-#        cdef v4l2.v4l2_querymenu querymenu
-#        querymenu.id = queryctrl.id
-#        querymenu.index = queryctrl.minimum
-#        menu = {}
-#        while querymenu.index <= queryctrl.maximum:
-#            if 0 == self.xioctl(v4l2.VIDIOC_QUERYMENU, &querymenu):
-#                menu[querymenu.name] = querymenu.index
-#            querymenu.index +=1
-#        return menu
-
-
-#    cpdef set_control(self, int control_id,value):
-#        cdef v4l2.v4l2_control control
-#        control.id = control_id
-#        control.value = value
-#        if self.xioctl(v4l2.VIDIOC_S_CTRL, &control) ==-1:
-#            if errno == ERANGE:
-#                logger.debug("Control out of range")
-#            else:
-#                logger.error("Could not set control")
-
-#    cpdef get_control(self, int control_id):
-#        cdef v4l2.v4l2_control control
-#        control.id = control_id
-#        if self.xioctl(v4l2.VIDIOC_G_CTRL, &control) ==-1:
-#            if errno == EINVAL:
-#                logger.debug("Control is not supported")
-#            else:
-#                logger.error("Could not set control")
-#        return control.value
 
 
 

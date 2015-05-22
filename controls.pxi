@@ -74,7 +74,7 @@ cdef class Control:
     cdef bytes display_name,doc
     cdef int unit_id,control_id,offset,data_len,bit_mask
     cdef int _value,min_val,max_val,step,default,buffer_len,info_bit_mask
-    cdef object d_type
+    cdef public object d_type
 
     def __cinit__(self,
                     Capture cap,
@@ -124,34 +124,16 @@ cdef class Control:
         if buffer_len is None:
             self.buffer_len = uvc.uvc_get_ctrl_len(self.devh,self.unit_id, self.control_id)
             if self.buffer_len < 1:
-                raise Exception("Error: %s"%uvc_error_codes[self.buffer_len])
+                raise Exception("Could not get buffer Length: Error: %s"%uvc_error_codes[self.buffer_len])
         else:
             self.buffer_len = buffer_len
 
         self.info_bit_mask = self._uvc_get(uvc.UVC_GET_INFO)
-
-        if min_val is None:
-            self.min_val = self._uvc_get(uvc.UVC_GET_MIN)
-        else:
-            self.min_val = min_val
-
-        if max_val is None:
-            self.max_val = self._uvc_get(uvc.UVC_GET_MAX)
-        else:
-            self.max_val = max_val
-
-        if step is None:
-            self.step = self._uvc_get(uvc.UVC_GET_RES)
-        else:
-            self.step = step
-
-        if default is None:
-            self.default = self._uvc_get(uvc.UVC_GET_DEF)
-        else:
-            self.min_val = min_val
-
-
-
+        self._value = self._uvc_get(uvc.UVC_GET_CUR)
+        self.min_val = min_val if min_val != None else self._uvc_get(uvc.UVC_GET_MIN)
+        self.max_val = min_val if max_val != None else self._uvc_get(uvc.UVC_GET_MAX)
+        self.step    = step    if step    != None else self._uvc_get(uvc.UVC_GET_RES)
+        self.default = default if default != None else self._uvc_get(uvc.UVC_GET_DEF)
 
     def print_info(self):
         print self.display_name
@@ -194,3 +176,9 @@ cdef class Control:
             raise Exception("Error: %s"%uvc_error_codes[ret])
 
 
+    property value:
+        def __get__(self):
+            return self._value
+        def __set__(self,value):
+            self._uvc_set(value)
+            self._value = self._uvc_get(uvc.UVC_GET_CUR)
