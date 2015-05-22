@@ -24,22 +24,6 @@ uvc_error_codes = {  0:"Success (no error)",
                     -52:"Resource has a callback (can't use polling and async)",
                     -99:"Undefined error."}
 
-uvc_vs_subtype = {
-   0x00 : "UVC_VS_UNDEFINED",
-   0x01 : "UVC_VS_INPUT_HEADER",
-   0x02 : "UVC_VS_OUTPUT_HEADER",
-   0x03 : "UVC_VS_STILL_IMAGE_FRAME",
-   0x04 : "UVC_VS_FORMAT_UNCOMPRESSED",
-   0x05 : "UVC_VS_FRAME_UNCOMPRESSED",
-   0x06 : "UVC_VS_FORMAT_MJPEG",
-   0x07 : "UVC_VS_FRAME_MJPEG",
-   0x0a : "UVC_VS_FORMAT_MPEG2TS",
-   0x0c : "UVC_VS_FORMAT_DV",
-   0x0d : "UVC_VS_COLORFORMAT",
-   0x10 : "UVC_VS_FORMAT_FRAME_BASED",
-   0x11 : "UVC_VS_FRAME_FRAME_BASED",
-   0x12 : "UVC_VS_FORMAT_STREAM_BASED"
-}
 
 class CaptureError(Exception):
     def __init__(self, message):
@@ -296,7 +280,6 @@ def device_list():
 
 include 'controls.pxi'
 
-
 cdef class Capture:
     """
     Video Capture class.
@@ -517,15 +500,14 @@ cdef class Capture:
         cdef uvc.uvc_processing_unit_t  *processing_unit = uvc.uvc_get_processing_units(self.devh)
         cdef uvc.uvc_extension_unit_t  *extension_unit = uvc.uvc_get_extension_units(self.devh)
 
-        cdef Control control
+        avaible_controls_per_unit = {}
+        id_per_unit = {}
+
         #print 'ext units'
         #while extension_unit !=NULL:
         #    bUnitID = extension_unit.bUnitID
         #    print bUnitID,bin(extension_unit.bmControls)
         #    extension_unit = extension_unit.next
-
-        avaible_controls_per_unit = {}
-        id_per_unit = {}
 
         while input_terminal !=NULL:
             avaible_controls_per_unit['input_terminal'] = input_terminal.bmControls
@@ -537,11 +519,11 @@ cdef class Capture:
             id_per_unit['processing_unit'] = processing_unit.bUnitID
             processing_unit = processing_unit.next
 
-
+        cdef Control control
         for std_ctl in standard_ctrl_units:
             if std_ctl['bit_mask'] & avaible_controls_per_unit[std_ctl['unit']]:
 
-                logger.debug('Adding "%s" as controll to Capture device'%std_ctl['display_name'])
+                logger.debug('Adding "%s" control.'%std_ctl['display_name'])
 
                 std_ctl['unit_id'] = id_per_unit[std_ctl['unit']]
                 control= Control(cap = self,**std_ctl)
