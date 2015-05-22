@@ -11,7 +11,7 @@ standard_ctrl_units = [
 'min_val': 1,
 'max_val': 8,
 'step':None,
-'default':None,
+'def_val':None,
 'd_type': {'manual mode':1, 'auto mode': 2, 'shutter priority mode': 4, 'aperture priority mode':8 },
 'doc': ''
 }
@@ -27,7 +27,7 @@ standard_ctrl_units = [
 'min_val': 0,
 'max_val': 1,
 'step':1,
-'default':0,
+'def_val':0,
 'd_type': bool,
 'doc':'0: frame rate must remain constant; 1: frame rate may be varied for AE purposes'
 }
@@ -43,7 +43,7 @@ standard_ctrl_units = [
 'min_val': None,
 'max_val': None,
 'step':None,
-'default':None,
+'def_val':None,
 'd_type': int,
 'doc': 'The `time` parameter should be provided in units of 0.0001 seconds (e.g., use the value 100 \
 for a 10ms exposure period). Auto exposure should be set to `manual` or `shutter_priority`\
@@ -61,7 +61,7 @@ before attempting to change this setting.'
 'min_val': 0,
 'max_val': 1,
 'step':1,
-'default':None,
+'def_val':None,
 'd_type': bool,
 'doc': 'Enable the Auto Focus'
 }
@@ -72,8 +72,8 @@ before attempting to change this setting.'
 cdef class Control:
     cdef uvc.uvc_device_handle_t *devh
     cdef public bytes display_name,doc,unit
-    cdef int unit_id,control_id,offset,data_len,bit_mask
-    cdef int _value,min_val,max_val,step,default,buffer_len,info_bit_mask
+    cdef int unit_id,control_id,offset,data_len,bit_mask,_value
+    cdef readonly int min_val,max_val,step,def_val,buffer_len,info_bit_mask
     cdef public object d_type
 
     def __cinit__(self,
@@ -91,7 +91,7 @@ cdef class Control:
                     min_val=None,
                     max_val=None,
                     step=None,
-                    default=None):
+                    def_val=None):
         pass
 
     def __init__(self,
@@ -109,7 +109,7 @@ cdef class Control:
                     min_val=None,
                     max_val=None,
                     step=None,
-                    default=None):
+                    def_val=None):
 
         self.devh = cap.devh
         self.display_name = display_name
@@ -134,7 +134,7 @@ cdef class Control:
         self.min_val = min_val if min_val != None else self._uvc_get(uvc.UVC_GET_MIN)
         self.max_val = min_val if max_val != None else self._uvc_get(uvc.UVC_GET_MAX)
         self.step    = step    if step    != None else self._uvc_get(uvc.UVC_GET_RES)
-        self.default = default if default != None else self._uvc_get(uvc.UVC_GET_DEF)
+        self.def_val = def_val if def_val != None else self._uvc_get(uvc.UVC_GET_DEF)
 
     def print_info(self):
         print self.display_name
@@ -142,7 +142,7 @@ cdef class Control:
         print '\t min: %s'%self.min_val
         print '\t max: %s'%self.max_val
         print '\t step: %s'%self.step
-        print '\t default: %s'%self.default
+        print '\t default: %s'%self.def_val
 
     cdef _uvc_get(self, req_code):
         cdef uvc.uint8_t data[12] #could be done dynamically
@@ -172,14 +172,19 @@ cdef class Control:
         else:
             uvc.INT_TO_DW(value,data+self.offset)
 
-        ret =  uvc.uvc_get_ctrl(self.devh, self.unit_id, self.control_id,data,self.data_len, uvc.UVC_SET_CUR)
-        if ret != self.buffer_len:
+        ret =  uvc.uvc_set_ctrl(self.devh, self.unit_id, self.control_id,data,self.data_len)
+        if ret <= 0: #== self.buffer_len
             raise Exception("Error: %s"%uvc_error_codes[ret])
 
+    cpdef refresh(self):
+        self._value = self._uvc_get(uvc.UVC_GET_CUR)
 
     property value:
         def __get__(self):
             return self._value
         def __set__(self,value):
-            self._uvc_set(value)
+            try:
+                self._uvc_set(value)
+            except:
+                logger.warning("Could not set Value. Must be read only")
             self._value = self._uvc_get(uvc.UVC_GET_CUR)
