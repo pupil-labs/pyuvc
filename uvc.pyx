@@ -506,7 +506,7 @@ cdef class Capture:
         if header_ok >=0 and out_frame.width == j_width and out_frame.height == out_frame.height:
             out_frame.jpeg_buffer = buf
         else:
-            raise Exception("JPEG header corrupted.")
+            raise CaptureError("JPEG header corrupted.")
         return out_frame
 
 
