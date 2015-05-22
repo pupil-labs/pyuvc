@@ -8,70 +8,14 @@ cdef extern from "libusb-1.0/libusb.h":
 cdef extern from "Python.h":
     void PyEval_InitThreads()
 
-ctypedef int uint8_t
-ctypedef int uint16_t
-ctypedef int uint32_t
-ctypedef int uint64_t
 
-cdef enum ctrl_bit_mask_processing_unit:
-    UVC_PU_BRIGHTNESS_CONTROL = 1 << 0
-    UVC_PU_CONTRAST_CONTROL = 1 << 1
-    UVC_PU_HUE_CONTROL = 1 << 2
-    UVC_PU_SATURATION_CONTROL = 1 << 3
-    UVC_PU_SHARPNESS_CONTROL = 1 << 4
-    UVC_PU_GAMMA_CONTROL = 1 << 5
-    UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL = 1 << 6
-    UVC_PU_WHITE_BALANCE_COMPONENT_CONTROL = 1 << 7
-    UVC_PU_BACKLIGHT_COMPENSATION_CONTROL = 1 << 8
-    UVC_PU_GAIN_CONTROL = 1 << 9
-    UVC_PU_POWER_LINE_FREQUENCY_CONTROL = 1 << 10
-    UVC_PU_HUE_AUTO_CONTROL = 1 << 11
-    UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL = 1 << 12
-    UVC_PU_WHITE_BALANCE_COMPONENT_AUTO_CONTROL = 1 << 13
-    UVC_PU_DIGITAL_MULTIPLIER_CONTROL = 1 << 14
-    UVC_PU_DIGITAL_MULTIPLIER_LIMIT_CONTROL = 1 << 15
-    UVC_PU_ANALOG_VIDEO_STANDARD_CONTROL = 1 << 16
-    UVC_PU_ANALOG_LOCK_STATUS_CONTROL = 1 << 17
-
-cdef enum ctrl_bit_mask_input_terminal:
-    UVC_CT_SCANNING_MODE_CONTROL = 1 << 0
-    UVC_CT_AE_MODE_CONTROL = 1 << 1
-    UVC_CT_AE_PRIORITY_CONTROL = 1 << 2
-    UVC_CT_EXPOSURE_TIME_ABSOLUTE_CONTROL = 1 << 3
-    UVC_CT_EXPOSURE_TIME_RELATIVE_CONTROL = 1 << 4
-    UVC_CT_FOCUS_ABSOLUTE_CONTROL = 1 << 5
-    UVC_CT_FOCUS_RELATIVE_CONTROL = 1 << 6
-    UVC_CT_IRIS_ABSOLUTE_CONTROL = 1 << 7
-    UVC_CT_IRIS_RELATIVE_CONTROL = 1 << 8
-    UVC_CT_ZOOM_ABSOLUTE_CONTROL = 1 << 9
-    UVC_CT_ZOOM_RELATIVE_CONTROL = 1 << 10
-    UVC_CT_PANTILT_ABSOLUTE_CONTROL = 1 << 11
-    UVC_CT_PANTILT_RELATIVE_CONTROL = 1 << 12
-    UVC_CT_ROLL_ABSOLUTE_CONTROL = 1 << 13
-    UVC_CT_ROLL_RELATIVE_CONTROL = 1 << 14
-    UVC_CT_FOCUS_AUTO_CONTROL = 1 << 17
-    UVC_CT_PRIVACY_CONTROL = 1 << 18
-
-
-#/** Converts an unaligned four-byte little-endian integer into an int32 */
-cdef inline int DW_TO_INT(uint8_t *p):
-    return (p)[0] | ((p)[1] << 8) | ((p)[2] << 16) | ((p)[3] << 24)
-#/** Converts an unaligned two-byte little-endian integer into an int16 */
-cdef inline int SW_TO_SHORT(uint8_t *p):
-    return (p)[0] | ((p)[1] << 8)
-#/** Converts an int16 into an unaligned two-byte little-endian integer */
-cdef inline void SHORT_TO_SW(short s, uint8_t *p):
-    p[0] = s
-    p[1] = s >> 8
-#/** Converts an int32 into an unaligned four-byte little-endian integer */
-cdef inline void INT_TO_DW(int i, uint8_t *p):
-    p[0] = i
-    p[1] = i >> 8
-    p[2] = i >> 16
-    p[3] = i >> 24
 
 cdef extern from  "libuvc/libuvc.h":
 
+    ctypedef int uint8_t
+    ctypedef int uint16_t
+    ctypedef int uint32_t
+    ctypedef int uint64_t
 
     cdef enum uvc_error:
         UVC_SUCCESS
@@ -406,147 +350,21 @@ cdef extern from  "libuvc/libuvc.h":
     int uvc_get_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len, uvc_req_code req_code)
     int uvc_set_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len)
 
-    #uvc_error_t uvc_get_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_mode *mode, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_power_mode(uvc_device_handle_t *devh, enum uvc_device_power_mode mode)
-
-    #/* AUTO-GENERATED control accessors! Update them with the output of `ctrl-gen.py decl`. */
-    #uvc_error_t uvc_get_scanning_mode(uvc_device_handle_t *devh, uint8_t* mode, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_scanning_mode(uvc_device_handle_t *devh, uint8_t mode)
-
-    #uvc_error_t uvc_get_ae_mode(uvc_device_handle_t *devh, uint8_t* mode, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_ae_mode(uvc_device_handle_t *devh, uint8_t mode)
-
-    #uvc_error_t uvc_get_ae_priority(uvc_device_handle_t *devh, uint8_t* priority, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_ae_priority(uvc_device_handle_t *devh, uint8_t priority)
-
-    #uvc_error_t uvc_get_exposure_abs(uvc_device_handle_t *devh, uint32_t* time, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_exposure_abs(uvc_device_handle_t *devh, uint32_t time)
-
-    #uvc_error_t uvc_get_exposure_rel(uvc_device_handle_t *devh, int8_t* step, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_exposure_rel(uvc_device_handle_t *devh, int8_t step)
-
-    #uvc_error_t uvc_get_focus_abs(uvc_device_handle_t *devh, uint16_t* focus, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_focus_abs(uvc_device_handle_t *devh, uint16_t focus)
-
-    #uvc_error_t uvc_get_focus_rel(uvc_device_handle_t *devh, int8_t* focus_rel, uint8_t* speed, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_focus_rel(uvc_device_handle_t *devh, int8_t focus_rel, uint8_t speed)
-
-    #uvc_error_t uvc_get_focus_simple_range(uvc_device_handle_t *devh, uint8_t* focus, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_focus_simple_range(uvc_device_handle_t *devh, uint8_t focus)
-
-    #uvc_error_t uvc_get_focus_auto(uvc_device_handle_t *devh, uint8_t* state, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_focus_auto(uvc_device_handle_t *devh, uint8_t state)
-
-    #uvc_error_t uvc_get_iris_abs(uvc_device_handle_t *devh, uint16_t* iris, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_iris_abs(uvc_device_handle_t *devh, uint16_t iris)
-
-    #uvc_error_t uvc_get_iris_rel(uvc_device_handle_t *devh, uint8_t* iris_rel, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_iris_rel(uvc_device_handle_t *devh, uint8_t iris_rel)
-
-    #uvc_error_t uvc_get_zoom_abs(uvc_device_handle_t *devh, uint16_t* focal_length, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_zoom_abs(uvc_device_handle_t *devh, uint16_t focal_length)
-
-    #uvc_error_t uvc_get_zoom_rel(uvc_device_handle_t *devh, int8_t* zoom_rel, uint8_t* digital_zoom, uint8_t* speed, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_zoom_rel(uvc_device_handle_t *devh, int8_t zoom_rel, uint8_t digital_zoom, uint8_t speed)
-
-    #uvc_error_t uvc_get_pantilt_abs(uvc_device_handle_t *devh, int32_t* pan, int32_t* tilt, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_pantilt_abs(uvc_device_handle_t *devh, int32_t pan, int32_t tilt)
-
-    #uvc_error_t uvc_get_pantilt_rel(uvc_device_handle_t *devh, int8_t* pan_rel, uint8_t* pan_speed, int8_t* tilt_rel, uint8_t* tilt_speed, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_pantilt_rel(uvc_device_handle_t *devh, int8_t pan_rel, uint8_t pan_speed, int8_t tilt_rel, uint8_t tilt_speed)
-
-    #uvc_error_t uvc_get_roll_abs(uvc_device_handle_t *devh, int16_t* roll, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_roll_abs(uvc_device_handle_t *devh, int16_t roll)
-
-    #uvc_error_t uvc_get_roll_rel(uvc_device_handle_t *devh, int8_t* roll_rel, uint8_t* speed, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_roll_rel(uvc_device_handle_t *devh, int8_t roll_rel, uint8_t speed)
-
-    #uvc_error_t uvc_get_privacy(uvc_device_handle_t *devh, uint8_t* privacy, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_privacy(uvc_device_handle_t *devh, uint8_t privacy)
-
-    #uvc_error_t uvc_get_digital_window(uvc_device_handle_t *devh, uint16_t* window_top, uint16_t* window_left, uint16_t* window_bottom, uint16_t* window_right, uint16_t* num_steps, uint16_t* num_steps_units, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_digital_window(uvc_device_handle_t *devh, uint16_t window_top, uint16_t window_left, uint16_t window_bottom, uint16_t window_right, uint16_t num_steps, uint16_t num_steps_units)
-
-    #uvc_error_t uvc_get_digital_roi(uvc_device_handle_t *devh, uint16_t* roi_top, uint16_t* roi_left, uint16_t* roi_bottom, uint16_t* roi_right, uint16_t* auto_controls, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_digital_roi(uvc_device_handle_t *devh, uint16_t roi_top, uint16_t roi_left, uint16_t roi_bottom, uint16_t roi_right, uint16_t auto_controls)
-
-    #uvc_error_t uvc_get_backlight_compensation(uvc_device_handle_t *devh, uint16_t* backlight_compensation, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_backlight_compensation(uvc_device_handle_t *devh, uint16_t backlight_compensation)
-
-    #uvc_error_t uvc_get_brightness(uvc_device_handle_t *devh, int16_t* brightness, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_brightness(uvc_device_handle_t *devh, int16_t brightness)
-
-    #uvc_error_t uvc_get_contrast(uvc_device_handle_t *devh, uint16_t* contrast, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_contrast(uvc_device_handle_t *devh, uint16_t contrast)
-
-    #uvc_error_t uvc_get_contrast_auto(uvc_device_handle_t *devh, uint8_t* contrast_auto, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_contrast_auto(uvc_device_handle_t *devh, uint8_t contrast_auto)
-
-    #uvc_error_t uvc_get_gain(uvc_device_handle_t *devh, uint16_t* gain, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_gain(uvc_device_handle_t *devh, uint16_t gain)
-
-    #uvc_error_t uvc_get_power_line_frequency(uvc_device_handle_t *devh, uint8_t* power_line_frequency, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_power_line_frequency(uvc_device_handle_t *devh, uint8_t power_line_frequency)
-
-    #uvc_error_t uvc_get_hue(uvc_device_handle_t *devh, int16_t* hue, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_hue(uvc_device_handle_t *devh, int16_t hue)
-
-    #uvc_error_t uvc_get_hue_auto(uvc_device_handle_t *devh, uint8_t* hue_auto, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_hue_auto(uvc_device_handle_t *devh, uint8_t hue_auto)
-
-    #uvc_error_t uvc_get_saturation(uvc_device_handle_t *devh, uint16_t* saturation, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_saturation(uvc_device_handle_t *devh, uint16_t saturation)
-
-    #uvc_error_t uvc_get_sharpness(uvc_device_handle_t *devh, uint16_t* sharpness, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_sharpness(uvc_device_handle_t *devh, uint16_t sharpness)
-
-    #uvc_error_t uvc_get_gamma(uvc_device_handle_t *devh, uint16_t* gamma, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_gamma(uvc_device_handle_t *devh, uint16_t gamma)
-
-    #uvc_error_t uvc_get_white_balance_temperature(uvc_device_handle_t *devh, uint16_t* temperature, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_white_balance_temperature(uvc_device_handle_t *devh, uint16_t temperature)
-
-    #uvc_error_t uvc_get_white_balance_temperature_auto(uvc_device_handle_t *devh, uint8_t* temperature_auto, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_white_balance_temperature_auto(uvc_device_handle_t *devh, uint8_t temperature_auto)
-
-    #uvc_error_t uvc_get_white_balance_component(uvc_device_handle_t *devh, uint16_t* blue, uint16_t* red, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_white_balance_component(uvc_device_handle_t *devh, uint16_t blue, uint16_t red)
-
-    #uvc_error_t uvc_get_white_balance_component_auto(uvc_device_handle_t *devh, uint8_t* white_balance_component_auto, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_white_balance_component_auto(uvc_device_handle_t *devh, uint8_t white_balance_component_auto)
-
-    #uvc_error_t uvc_get_digital_multiplier(uvc_device_handle_t *devh, uint16_t* multiplier_step, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_digital_multiplier(uvc_device_handle_t *devh, uint16_t multiplier_step)
-
-    #uvc_error_t uvc_get_digital_multiplier_limit(uvc_device_handle_t *devh, uint16_t* multiplier_step, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_digital_multiplier_limit(uvc_device_handle_t *devh, uint16_t multiplier_step)
-
-    #uvc_error_t uvc_get_analog_video_standard(uvc_device_handle_t *devh, uint8_t* video_standard, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_analog_video_standard(uvc_device_handle_t *devh, uint8_t video_standard)
-
-    #uvc_error_t uvc_get_analog_video_lock_status(uvc_device_handle_t *devh, uint8_t* status, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_analog_video_lock_status(uvc_device_handle_t *devh, uint8_t status)
-
-    #uvc_error_t uvc_get_input_select(uvc_device_handle_t *devh, uint8_t* selector, enum uvc_req_code req_code)
-    #uvc_error_t uvc_set_input_select(uvc_device_handle_t *devh, uint8_t selector)
-    #/* end AUTO-GENERATED control accessors */
-
-    #void uvc_perror(uvc_error_t err, const char *msg)
-    #const char* uvc_strerror(uvc_error_t err)
-    #void uvc_print_diag(uvc_device_handle_t *devh, FILE *stream)
-    #void uvc_print_stream_ctrl(uvc_stream_ctrl_t *ctrl, FILE *stream)
-
-    #uvc_frame_t *uvc_allocate_frame(size_t data_bytes)
-    #void uvc_free_frame(uvc_frame_t *frame)
-
-    #uvc_error_t uvc_duplicate_frame(uvc_frame_t *in, uvc_frame_t *out)
-
-    #uvc_error_t uvc_yuyv2rgb(uvc_frame_t *in, uvc_frame_t *out)
-    #uvc_error_t uvc_uyvy2rgb(uvc_frame_t *in, uvc_frame_t *out)
-    #uvc_error_t uvc_any2rgb(uvc_frame_t *in, uvc_frame_t *out)
-
-    #uvc_error_t uvc_yuyv2bgr(uvc_frame_t *in, uvc_frame_t *out)
-    #uvc_error_t uvc_uyvy2bgr(uvc_frame_t *in, uvc_frame_t *out)
-    #uvc_error_t uvc_any2bgr(uvc_frame_t *in, uvc_frame_t *out)
 
 
+#/** Converts an unaligned four-byte little-endian integer into an int32 */
+cdef inline int DW_TO_INT(uint8_t *p):
+    return (p)[0] | ((p)[1] << 8) | ((p)[2] << 16) | ((p)[3] << 24)
+#/** Converts an unaligned two-byte little-endian integer into an int16 */
+cdef inline int SW_TO_SHORT(uint8_t *p):
+    return (p)[0] | ((p)[1] << 8)
+#/** Converts an int16 into an unaligned two-byte little-endian integer */
+cdef inline void SHORT_TO_SW(short s, uint8_t *p):
+    p[0] = s
+    p[1] = s >> 8
+#/** Converts an int32 into an unaligned four-byte little-endian integer */
+cdef inline void INT_TO_DW(int i, uint8_t *p):
+    p[0] = i
+    p[1] = i >> 8
+    p[2] = i >> 16
+    p[3] = i >> 24

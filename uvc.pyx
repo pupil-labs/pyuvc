@@ -1,4 +1,5 @@
 import cython
+from libc.string cimport memset
 cimport cuvc as uvc
 cimport cturbojpeg as turbojpeg
 cimport numpy as np
@@ -317,7 +318,7 @@ cdef class Capture:
     cdef tuple _active_mode
     cdef list _available_modes
     cdef dict _info
-    cdef list controls
+    cdef public list controls
 
     def __cinit__(self,dev_uid):
         self.dev = NULL
@@ -526,35 +527,27 @@ cdef class Capture:
         avaible_controls_per_unit = {}
         id_per_unit = {}
 
-        print 'input terminals'
         while input_terminal !=NULL:
-            bmControls = input_terminal.bTerminalID
             avaible_controls_per_unit['input_terminal'] = input_terminal.bmControls
             id_per_unit['input_terminal'] = input_terminal.bTerminalID
-            #d_len = uvc.uvc_get_ctrl_len(self.devh,bUnitID,1)
-            #print uvc.uvc_get_ctrl(self.devh,bUnitID,1)
-            print bmControls
             input_terminal = input_terminal.next
 
-        print 'processing_unit'
         while processing_unit !=NULL:
-            bmControls = processing_unit.bUnitID
             avaible_controls_per_unit['processing_unit'] = processing_unit.bmControls
             id_per_unit['processing_unit'] = processing_unit.bUnitID
-
-            #d_len = uvc.uvc_get_ctrl_len(self.devh,bUnitID,1)
-            #print uvc.uvc_get_ctrl(self.devh,bUnitID,1)
-            print bmControls
             processing_unit = processing_unit.next
 
 
         for std_ctl in standard_ctrl_units:
             if std_ctl['bit_mask'] & avaible_controls_per_unit[std_ctl['unit']]:
+
                 logger.debug('Adding "%s" as controll to Capture device'%std_ctl['display_name'])
                 std_ctl['unit_id'] = id_per_unit[std_ctl['unit']]
-                control = Control(**std_ctl)
-                control.devh = self.devh
-                control.init_vars()
+
+                #we need to defer __init__ as we cannot pass the handle before
+                control= Control(cap = self,**std_ctl)
+                #control = Control.__new__(Control,**std_ctl)
+                #control.devh = self.devh
                 self.controls.append(control)
 
 
