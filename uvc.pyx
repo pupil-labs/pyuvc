@@ -514,14 +514,12 @@ cdef class Capture:
         avaible_controls_per_unit = {}
         id_per_unit = {}
         extension_units = {}
-        #print 'ext units'
         while extension_unit !=NULL:
             guidExtensionCode = uint_array_to_GuidCode(extension_unit.guidExtensionCode)
             id_per_unit[guidExtensionCode] = extension_unit.bUnitID
             avaible_controls_per_unit[guidExtensionCode] = extension_unit.bmControls
             extension_unit = extension_unit.next
 
-        print id_per_unit,avaible_controls_per_unit
 
         while input_terminal !=NULL:
             avaible_controls_per_unit['input_terminal'] = input_terminal.bmControls
