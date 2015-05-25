@@ -145,6 +145,16 @@ cdef class Control:
         self.step    = step    if step    != None else self._uvc_get(uvc.UVC_GET_RES)
         self.def_val = def_val if def_val != None else self._uvc_get(uvc.UVC_GET_DEF)
 
+        #we could filter out unsupported entries but device dont always implement this correctly.
+        #if type(self.d_type) == dict:
+        #    possible_vals = range(self.min_val,self.max_val+1,self.step)
+        #    print possible_vals
+        #    filtered_entries = {}
+        #    for key,val in self.d_type.iteritems():
+        #        if val in possible_vals:
+        #            filtered_entries[key] = val
+        #    self.d_type = filtered_entries
+
     def print_info(self):
         print self.display_name
         print '\t value: %s'%self._value
