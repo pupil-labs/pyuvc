@@ -1,3 +1,13 @@
+'''
+(*)~----------------------------------------------------------------------------------
+ Pupil - eye tracking platform
+ Copyright (C) 2012-2015  Pupil Labs
+
+ Distributed under the terms of the CC BY-NC-SA License.
+ License details are in the file LICENSE, distributed as part of this software.
+----------------------------------------------------------------------------------~(*)
+'''
+
 import cython
 from libc.string cimport memset
 cimport cuvc as uvc
@@ -500,14 +510,18 @@ cdef class Capture:
         cdef uvc.uvc_processing_unit_t  *processing_unit = uvc.uvc_get_processing_units(self.devh)
         cdef uvc.uvc_extension_unit_t  *extension_unit = uvc.uvc_get_extension_units(self.devh)
 
+        cdef int x = 0
         avaible_controls_per_unit = {}
         id_per_unit = {}
-
+        extension_units = {}
         #print 'ext units'
-        #while extension_unit !=NULL:
-        #    bUnitID = extension_unit.bUnitID
-        #    print bUnitID,bin(extension_unit.bmControls)
-        #    extension_unit = extension_unit.next
+        while extension_unit !=NULL:
+            guidExtensionCode = uint_array_to_GuidCode(extension_unit.guidExtensionCode)
+            id_per_unit[guidExtensionCode] = extension_unit.bUnitID
+            avaible_controls_per_unit[guidExtensionCode] = extension_unit.bmControls
+            extension_unit = extension_unit.next
+
+        print id_per_unit,avaible_controls_per_unit
 
         while input_terminal !=NULL:
             avaible_controls_per_unit['input_terminal'] = input_terminal.bmControls
@@ -636,6 +650,12 @@ cdef inline int interval_to_fps(int interval):
     return int(10000000./interval)
 
 
+cdef inline str uint_array_to_GuidCode(uvc.uint8_t * u):
+    cdef str s = ''
+    cdef int x
+    for x in range(16):
+        s += "{0:0{1}x}".format(u[x],2) # map int to rwo digit hex without "0x" prefix.
+    return '%s%s%s%s%s%s%s%s-%s%s%s%s-%s%s%s%s-%s%s%s%s-%s%s%s%s%s%s%s%s%s%s%s%s'%tuple(s)
 
 #def get_sys_time_monotonic():
 #    cdef time.timespec t

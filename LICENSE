@@ -1,28 +1,33 @@
-Copyright (c) 2015, Pupil Labs
-All rights reserved.
+------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
+Pupil - open source eye tracking platform
+Copyright (C) 2012-2015  Pupil Labs UG
+------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
+Motivation
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+We want Pupil to proliferate! We want you to use Pupil to empower and inspire whatever you do. Be it academic research, teaching, art or personally motivated projects.
 
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
+The software is open and the hardware is very accessible and modifiable because we think that you should be more of a member of the Pupil community than a customer of the Pupil product. We encourage the modification of software and hardware in accordance to the open source license.
+------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
+Software
 
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
+All source code written by us is open source according to CC BY-NC-SA license < http://creativecommons.org/licenses/by-nc-sa/3.0/legalcode >. We want you to change and improve the code. All software is distributed in the hope that it will be useful, but without any warranty. Just make sure to credit us, and we hope that you will share your work with the Pupil community.
+------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
+Documentation
 
-* Neither the name of pyuvc nor the names of its
-  contributors may be used to endorse or promote products derived from
-  this software without specific prior written permission.
+All content of the documentation written by Pupil Labs UG is open source, according to CC BY-NC-SA license.  See < http://creativecommons.org/licenses/by-nc-sa/3.0/legalcode >
+------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
+Using PUPIL in your research and work
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+You can use Pupil in your research, academic work, art projects and personal work. We only ask you to credit us appropriately. Pupil is developed and maintained by Pupil Labs UG.
+------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
+Using PUPIL commercially
 
+If you plan to use Pupil in a commercial context please contact us so we can work out an appropriate license with you.  Contact sales [at] pupil-labs [dot] com
+------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------

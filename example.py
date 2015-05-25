@@ -10,7 +10,7 @@ import numpy as np
 
 dev_list =  uvc.device_list()
 print dev_list
-cap = uvc.Capture(dev_list[1]['uid'])
+cap = uvc.Capture(dev_list[0]['uid'])
 for c in cap.controls:
 	print getattr(c,'value')
 	if 'Focus' in c.display_name:
