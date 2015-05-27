@@ -88,7 +88,7 @@ before attempting to change this setting.'
 'step':None,
 'def_val':None,
 'd_type': int,
-'doc': 'The setting for the attribute of the addressed Focus (Absolute) Control..'
+'doc': 'The settings for Absolute Focus'
 }
 
 ]
