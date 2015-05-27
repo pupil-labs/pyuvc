@@ -74,6 +74,23 @@ before attempting to change this setting.'
 'd_type': bool,
 'doc': 'Enable the Auto Focus'
 }
+,
+{
+'display_name': 'Absolute Focus',
+'unit': 'input_terminal',
+'control_id': uvc.UVC_CT_FOCUS_ABSOLUTE_CONTROL ,
+'bit_mask': 1 << 5,
+'offset': 0 ,
+'data_len': 2 ,
+'buffer_len': 2,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None,
+'d_type': int,
+'doc': 'The setting for the attribute of the addressed Focus (Absolute) Control..'
+}
+
 ]
 
 
