@@ -90,6 +90,22 @@ before attempting to change this setting.'
 'd_type': int,
 'doc': 'The settings for Absolute Focus'
 }
+,
+{
+'display_name': 'Absolute Iris ',
+'unit': 'input_terminal',
+'control_id': uvc.UVC_CT_IRIS_ABSOLUTE_CONTROL ,
+'bit_mask':1 << 7,
+'offset': 0 ,
+'data_len': 2 ,
+'buffer_len': 2,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None,
+'d_type': int,
+'doc': 'The setting for Absolute Iris Control.'
+}
 
 ]
 
