@@ -124,22 +124,6 @@ before attempting to change this setting.'
 }
 ,
 {
-'display_name': 'Scanning Mode ',
-'unit': 'input_terminal',
-'control_id': uvc.UVC_CT_SCANNING_MODE_CONTROL ,
-'bit_mask':1 << 0,
-'offset': 0 ,
-'data_len': 1 ,
-'buffer_len': 1,
-'min_val': 0,
-'max_val': 1,
-'step':1,
-'def_val':0,#I have assumed the defaul value as 0 becuase nothing was specified
-'d_type': bool,
-'doc': 'The setting for Scanning control of camera sensor.0 means interlaced mode while 1 means non-interlaced or progressive mode.'
-}
-,
-{
 'display_name': 'Exposure(time) relative control',
 'unit': 'input_terminal',
 'control_id': uvc.UVC_CT_EXPOSURE_TIME_RELATIVE_CONTROL ,
@@ -155,22 +139,7 @@ before attempting to change this setting.'
 'doc': 'The setting for Exposure time relatvie control.A value of one (1) indicates that the exposure time is incremented one step further, and a value 0xFF
 indicates that the exposure time is decremented one step further.'
 }
-,
-{
-'display_name': 'Scanning Mode ',
-'unit': 'input_terminal',
-'control_id': uvc.UVC_CT_SCANNING_MODE_CONTROL ,
-'bit_mask':1 << 0,
-'offset': 0 ,
-'data_len': 1 ,
-'buffer_len': 1,
-'min_val': 0,
-'max_val': 1,
-'step':1,
-'def_val':0,#I have assumed the defaul value as 0 becuase nothing was specified
-'d_type': bool,
-'doc': 'The setting for Scanning control of camera sensor.0 means interlaced mode while 1 means non-interlaced or progressive mode.'
-}
+
 ,
 {
 'display_name': 'Focus relative',
