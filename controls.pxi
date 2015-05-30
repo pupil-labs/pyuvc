@@ -139,7 +139,6 @@ before attempting to change this setting.'
 'doc': 'The setting for Exposure time relatvie control.A value of one (1) indicates that the exposure time is incremented one step further, and a value 0xFF
 indicates that the exposure time is decremented one step further.'
 }
-
 ,
 {
 'display_name': 'Focus relative',
@@ -172,6 +171,24 @@ indicates that the exposure time is decremented one step further.'
 'd_type': int,
 'doc':'A step value of 1 indicates that the iris is opened 1 step further. A value of 0xFF indicates that the iris is closed 1 step further.'
 }
+,
+{
+'display_name': 'Zoom absolute control',
+'unit': 'input_terminal',
+'control_id': uvc.UVC_CT_ZOOM_ABSOLUTE_CONTROL ,
+'bit_mask': 1 << 4,
+'offset': 0 ,
+'data_len': 2 ,
+'buffer_len': 2,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None,
+'d_type': int,
+'doc': 'The setting for Exposure time relatvie control.A value of one (1) indicates that the exposure time is incremented one step further, and a value 0xFF
+indicates that the exposure time is decremented one step further.'
+}
+
 ]
 
 
