@@ -136,8 +136,7 @@ before attempting to change this setting.'
 'step':1,
 'def_val':0,
 'd_type': {'increment mode':1,'decrement mode':255},
-'doc': 'The setting for Exposure time relatvie control.A value of one (1) indicates that the exposure time is incremented one step further, and a value 0xFF
-indicates that the exposure time is decremented one step further.'
+'doc': 'The setting for Exposure time relatvie control.'
 }
 ,
 {
@@ -201,8 +200,7 @@ indicates that the exposure time is decremented one step further.'
 'step':None,
 'def_val':None,
 'd_type': int,
-'doc': 'The Roll (Absolute) Control is used to specify the roll setting in degrees. Values range from –
-180 to +180, or a subset thereof.'
+'doc': 'The Roll (Absolute) Control is used to specify the roll setting in degrees. Values range from –180 to +180, or a subset thereof.'
 }
 ,
 {
@@ -218,8 +216,7 @@ indicates that the exposure time is decremented one step further.'
 'step':1,
 'def_val':0,#Assumption
 'd_type': bool,
-'doc': 'A value of 0 indicates that the camera sensor is able to capture video images, and a value of 1
-indicates that the camera sensor is prevented from capturing video images.'
+'doc': 'A value of 0 indicates that the camera sensor is able to capture video images, and a value of 1 indicates that the camera sensor is prevented from capturing video images.'
 }
 ,
 {
