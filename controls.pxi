@@ -205,6 +205,23 @@ indicates that the exposure time is decremented one step further.'
 'doc': 'The Roll (Absolute) Control is used to specify the roll setting in degrees. Values range from –
 180 to +180, or a subset thereof.'
 }
+,
+{
+'display_name': 'Privacy Shutter control',
+'unit': 'input_terminal',
+'control_id': uvc.UVC_CT_PRIVACY_CONTROL ,
+'bit_mask': 1 << 18,
+'offset': 0 ,
+'data_len': 1 ,
+'buffer_len': 1,
+'min_val': 0,
+'max_val': 1,
+'step':1,
+'def_val':0,#Assumption
+'d_type': bool,
+'doc': 'A value of 0 indicates that the camera sensor is able to capture video images, and a value of 1
+indicates that the camera sensor is prevented from capturing video images.'
+}
 ]
 
 
