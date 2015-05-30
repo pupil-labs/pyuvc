@@ -188,7 +188,23 @@ indicates that the exposure time is decremented one step further.'
 'doc': 'The setting for Exposure time relatvie control.A value of one (1) indicates that the exposure time is incremented one step further, and a value 0xFF
 indicates that the exposure time is decremented one step further.'
 }
-
+,
+{
+'display_name': 'Roll absolute control',
+'unit': 'input_terminal',
+'control_id': uvc.UVC_CT_ROLL_ABSOLUTE_CONTROL ,
+'bit_mask': 1 << 13,
+'offset': 0 ,
+'data_len': 2 ,
+'buffer_len': 2,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None,
+'d_type': int,
+'doc': 'The Roll (Absolute) Control is used to specify the roll setting in degrees. Values range from –
+180 to +180, or a subset thereof.'
+}
 ]
 
 
