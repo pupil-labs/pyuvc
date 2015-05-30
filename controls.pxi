@@ -168,7 +168,7 @@ indicates that the exposure time is decremented one step further.'
 'max_val': 255, #Assumption
 'step':1,
 'def_val':0,
-'d_type': {'Iris is opened my one step':1, 'Iris is closed by one step':255},
+'d_type': {'Default':0, 'Iris is opened my one step':1, 'Iris is closed by one step':255},
 'doc':'A step value of 1 indicates that the iris is opened 1 step further. A value of 0xFF indicates that the iris is closed 1 step further.'
 }
 ,
@@ -298,8 +298,8 @@ indicates that the camera sensor is prevented from capturing video images.'
 'max_val': 2,
 'step':1,
 'def_val':None,
-'d_type': int,
-'doc': 'This control allows the host software to specify the local power line frequency,for the implementing anti-flicker processing. 0: Disabled, 1: 50 Hz, 2: 60 Hz.'
+'d_type': {'Disabled':0,'50Hz':1,'60Hz':2},
+'doc': 'This control allows the host software to specify the local power line frequency,for the implementing anti-flicker processing.'
 }
 ,
 {
