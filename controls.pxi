@@ -185,8 +185,7 @@ indicates that the exposure time is decremented one step further.'
 'step':None,
 'def_val':None,
 'd_type': int,
-'doc': 'The setting for Exposure time relatvie control.A value of one (1) indicates that the exposure time is incremented one step further, and a value 0xFF
-indicates that the exposure time is decremented one step further.'
+'doc': 'The Zoom (Absolute) Control is used to specify or determine the Objective lens focal length.'
 }
 ,
 {
