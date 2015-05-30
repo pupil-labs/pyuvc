@@ -124,7 +124,7 @@ before attempting to change this setting.'
 }
 ,
 {
-'display_name': 'Exposure(time) relative control',
+'display_name': 'Exposure(time) relative',
 'unit': 'input_terminal',
 'control_id': uvc.UVC_CT_EXPOSURE_TIME_RELATIVE_CONTROL ,
 'bit_mask': 1 << 4,
@@ -155,6 +155,22 @@ indicates that the exposure time is decremented one step further.'
 'def_val':None,
 'd_type': int,
 'doc': 'The setting for Relative focus 0: Stop,1: Focus Near direction, 0xFF: Focus Infinite direction.'
+}
+,
+{
+'display_name': 'Iris relative control',
+'unit': 'input_terminal',
+'control_id': uvc.UVC_CT_IRIS_RELATIVE_CONTROL ,
+'bit_mask': 1 << 8,
+'offset': 0,
+'data_len': 1,
+'buffer_len': 1,
+'min_val': 0,
+'max_val': 255, #Assming it is a 7 bit the maz value is 255
+'step':1,
+'def_val':0,
+'d_type': int,
+'doc':'A step value of 1 indicates that the iris is opened 1 step further. A value of 0xFF indicates that the iris is closed 1 step further.'
 }
 ]
 
