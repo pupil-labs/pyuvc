@@ -365,6 +365,22 @@ indicates that the camera sensor is prevented from capturing video images.'
 'd_type': int,
 'doc': 'This is used to specify the gamma setting.'
 }
+,
+{
+'display_name': 'White Balance temperature',
+'unit': 'processing_terminal',
+'control_id': uvc.UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL ,
+'bit_mask': 1 << 6,
+'offset': 0 ,
+'data_len': 2 ,
+'buffer_len': 2,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None,
+'d_type': int,
+'doc': 'This is used to specify the white balance setting as a color temperature in degrees Kelvin.'
+}
 ]
 
 
