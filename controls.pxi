@@ -131,11 +131,11 @@ before attempting to change this setting.'
 'offset': 0 ,
 'data_len': 1 ,
 'buffer_len': 1,
-'min_val': 0,#Not specified in the document
-'max_val': 1,#Also not specified
-'step':{'increment mode':1, 'decrement mode': 0xFF }, #Please check if this value is correct
+'min_val': 0,#assumed
+'max_val': 255,#assumed
+'step':1,
 'def_val':0,
-'d_type': int,
+'d_type': {'increment mode':1,'decrement mode':255},
 'doc': 'The setting for Exposure time relatvie control.A value of one (1) indicates that the exposure time is incremented one step further, and a value 0xFF
 indicates that the exposure time is decremented one step further.'
 }
