@@ -238,6 +238,22 @@ indicates that the camera sensor is prevented from capturing video images.'
 'd_type': int,
 'doc': 'The Backlight Compensation Control is used to specify the backlight compensation.'
 }
+,
+{
+'display_name': 'Brightness',
+'unit': 'processing_terminal',
+'control_id': uvc.UVC_PU_BRIGHTNESS_CONTROL ,
+'bit_mask': 1 << 0,
+'offset': 0 ,
+'data_len': 2 ,
+'buffer_len': 2,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None,
+'d_type': int,
+'doc': 'This is used to specify the brightness.'
+}
 ]
 
 
