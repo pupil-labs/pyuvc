@@ -461,6 +461,22 @@ indicates that the camera sensor is prevented from capturing video images.'
 'd_type':  {'NTSC – 525/60':1, 'PAL – 625/50': 2, 'SECAM – 625/50': 3, 'NTSC – 625/50':4,'PAL – 525/60':5},
 'doc': 'This is used to report the current Video Standard of the stream captured by the Processing Unit.'
 }
+,
+{
+'display_name': 'Analog lock status control',
+'unit': 'processing_terminal',
+'control_id': uvc.UVC_PU_ANALOG_LOCK_STATUS_CONTROL,
+'bit_mask': 1 << 17,
+'offset': 0 ,
+'data_len': 1,
+'buffer_len': 1,
+'min_val': 0,
+'max_val': 255,
+'step':1,
+'def_val':0,#assumed
+'d_type': {'Video decoder is locked':0,'Video decoder is not locked':1},
+'doc': 'This is used to report whether the video decoder has achieved horizontal lock of the analog input signal.'
+}
 ]
 
 
