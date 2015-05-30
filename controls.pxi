@@ -165,10 +165,10 @@ indicates that the exposure time is decremented one step further.'
 'data_len': 1,
 'buffer_len': 1,
 'min_val': 0,
-'max_val': 255, #Assming it is a 7 bit the maz value is 255
+'max_val': 255, #Assumption
 'step':1,
 'def_val':0,
-'d_type': int,
+'d_type': {'Iris is opened my one step':1, 'Iris is closed by one step':255},
 'doc':'A step value of 1 indicates that the iris is opened 1 step further. A value of 0xFF indicates that the iris is closed 1 step further.'
 }
 ,
