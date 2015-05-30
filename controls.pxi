@@ -477,6 +477,22 @@ indicates that the camera sensor is prevented from capturing video images.'
 'd_type': {'Video decoder is locked':0,'Video decoder is not locked':1},
 'doc': 'This is used to report whether the video decoder has achieved horizontal lock of the analog input signal.'
 }
+,
+{
+'display_name': 'Hue Auto control',
+'unit': 'processing_terminal',
+'control_id': uvc.UVC_PU_HUE_AUTO_CONTROL ,
+'bit_mask':1 << 11,
+'offset': 0 ,
+'data_len': 1 ,
+'buffer_len': 1,
+'min_val': 0,
+'max_val': 1, #Assumed
+'step':1, #assumed
+'def_val':None,
+'d_type': int,
+'doc': 'The Hue Auto Control setting determines whether the device will provide automatic adjustment of the related control.'
+}
 ]
 
 
