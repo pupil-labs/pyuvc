@@ -285,6 +285,22 @@ indicates that the camera sensor is prevented from capturing video images.'
 'd_type': int,
 'doc': 'This is used to specify the gain setting.'
 }
+,
+{
+'display_name': 'Power Line frequency',
+'unit': 'processing_terminal',
+'control_id': uvc.UVC_PU_POWER_LINE_FREQUENCY_CONTROL ,
+'bit_mask':1 << 10,
+'offset': 0 ,
+'data_len': 1 ,
+'buffer_len': 1,
+'min_val': 0,
+'max_val': 2,
+'step':1,
+'def_val':None,
+'d_type': int,
+'doc': 'This control allows the host software to specify the local power line frequency,for the implementing anti-flicker processing. 0: Disabled, 1: 50 Hz, 2: 60 Hz.'
+}
 ]
 
 
