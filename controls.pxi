@@ -385,8 +385,8 @@ indicates that the camera sensor is prevented from capturing video images.'
 {
 'display_name': 'White Balance temperature,Auto',
 'unit': 'processing_terminal',
-'control_id': uvc.UUVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROLL ,
-'bit_mask': 1 << 12
+'control_id': uvc.UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL ,
+'bit_mask': 1 << 12,
 'offset': 0 ,
 'data_len': 1 ,
 'buffer_len': 1,
@@ -396,6 +396,22 @@ indicates that the camera sensor is prevented from capturing video images.'
 'def_val':None,
 'd_type': int,
 'doc': 'The White Balance Temperature Auto Control setting determines whether the device will provide automatic adjustment of the related control.1 indicates automatic adjustment is enabled'
+}
+,
+{
+'display_name': 'White Balance component,Auto',
+'unit': 'processing_terminal',
+'control_id': uvc.UVC_PU_WHITE_BALANCE_COMPONENT_AUTO_CONTROL ,
+'bit_mask': 1 << 13,
+'offset': 0 ,
+'data_len': 1 ,
+'buffer_len': 1,
+'min_val': 0,
+'max_val': 1,#unspecified therefore assumed as 1
+'step':1, #unspecified
+'def_val':None,
+'d_type': int,
+'doc': 'The White Balance Component Auto Control setting determines whether the device will provide automatic adjustment of the related control.'
 }
 ]
 
