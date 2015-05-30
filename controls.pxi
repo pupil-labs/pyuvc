@@ -413,6 +413,22 @@ indicates that the camera sensor is prevented from capturing video images.'
 'd_type': int,
 'doc': 'The White Balance Component Auto Control setting determines whether the device will provide automatic adjustment of the related control.'
 }
+,
+{
+'display_name': 'Digital Multiplier',
+'unit': 'processing_terminal',
+'control_id': uvc.UVC_PU_DIGITAL_MULTIPLIER_CONTROL,
+'bit_mask': 1 << 14,
+'offset': 0 ,
+'data_len': 2,
+'buffer_len': 2,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None,
+'d_type': int,
+'doc': 'This is used to specify the amount of Digital Zoom applied to the optical image.'
+}
 ]
 
 
