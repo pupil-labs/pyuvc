@@ -301,6 +301,22 @@ indicates that the camera sensor is prevented from capturing video images.'
 'd_type': int,
 'doc': 'This control allows the host software to specify the local power line frequency,for the implementing anti-flicker processing. 0: Disabled, 1: 50 Hz, 2: 60 Hz.'
 }
+,
+{
+'display_name': 'Hue',
+'unit': 'processing_terminal',
+'control_id': uvc.UVC_PU_HUE_CONTROL ,
+'bit_mask':1 << 2,
+'offset': 0 ,
+'data_len': 2 ,
+'buffer_len': 2,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None, #in the description of the control it is said that the default value must be zero but the mandatory request says GET_DEF hence I wrote None
+'d_type': int,
+'doc': 'This is used to specify the hue setting'
+}
 ]
 
 
