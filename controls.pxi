@@ -445,6 +445,22 @@ indicates that the camera sensor is prevented from capturing video images.'
 'd_type': int,
 'doc': 'This is used to specify an upper limit for the amount of Digital Zoom applied to the optical image.'
 }
+,
+{
+'display_name': 'Analog video standard',
+'unit': 'processing_terminal',
+'control_id': uvc.UVC_PU_ANALOG_VIDEO_STANDARD_CONTROL,
+'bit_mask': 1 << 15,
+'offset': 0 ,
+'data_len': 1,
+'buffer_len': 1,
+'min_val': 0,
+'max_val': 255,
+'step':1,
+'def_val':0,
+'d_type':  {'NTSC – 525/60':1, 'PAL – 625/50': 2, 'SECAM – 625/50': 3, 'NTSC – 625/50':4,'PAL – 525/60':5},
+'doc': 'This is used to report the current Video Standard of the stream captured by the Processing Unit.'
+}
 ]
 
 
