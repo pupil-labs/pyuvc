@@ -152,8 +152,8 @@ indicates that the exposure time is decremented one step further.'
 'max_val': None,
 'step':None,
 'def_val':None,
-'d_type': int,
-'doc': 'The setting for Relative focus 0: Stop,1: Focus Near direction, 0xFF: Focus Infinite direction.'
+'d_type': {'Stop':0,'Focus Near direction':1,'Focus Infinite Direction':255},#Please check this field
+'doc': 'The setting for Relative focus.'
 }
 ,
 {
