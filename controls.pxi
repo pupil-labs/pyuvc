@@ -222,6 +222,22 @@ indicates that the exposure time is decremented one step further.'
 'doc': 'A value of 0 indicates that the camera sensor is able to capture video images, and a value of 1
 indicates that the camera sensor is prevented from capturing video images.'
 }
+,
+{
+'display_name': 'Backlight Compensation',
+'unit': 'processing_terminal',
+'control_id': uvc.UVC_PU_BACKLIGHT_COMPENSATION_CONTROL ,
+'bit_mask': 1 << 8,
+'offset': 0 ,
+'data_len': 2 ,
+'buffer_len': 2,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None,
+'d_type': int,
+'doc': 'The Backlight Compensation Control is used to specify the backlight compensation.'
+}
 ]
 
 
