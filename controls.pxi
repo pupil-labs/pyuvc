@@ -50,7 +50,7 @@ standard_ctrl_units = [
 'data_len': 4 ,
 'buffer_len': 4,
 'min_val': None,
-'max_val': None,
+'max_val': 500, #usually None but we overwrite,
 'step':None,
 'def_val':None,
 'd_type': int,
