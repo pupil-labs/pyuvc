@@ -221,7 +221,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Backlight Compensation',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_BACKLIGHT_COMPENSATION_CONTROL ,
 'bit_mask': 1 << 8,
 'offset': 0 ,
@@ -237,7 +237,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Brightness',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_BRIGHTNESS_CONTROL ,
 'bit_mask': 1 << 0,
 'offset': 0 ,
@@ -253,7 +253,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Contrast',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_CONTRAST_CONTROL ,
 'bit_mask': 1 << 1,
 'offset': 0 ,
@@ -269,7 +269,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Gain',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_GAIN_CONTROL ,
 'bit_mask':1 << 9,
 'offset': 0 ,
@@ -285,7 +285,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Power Line frequency',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_POWER_LINE_FREQUENCY_CONTROL ,
 'bit_mask':1 << 10,
 'offset': 0 ,
@@ -301,7 +301,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Hue',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_HUE_CONTROL ,
 'bit_mask':1 << 2,
 'offset': 0 ,
@@ -317,7 +317,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Saturation',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_SATURATION_CONTROL ,
 'bit_mask':1 << 3,
 'offset': 0 ,
@@ -333,7 +333,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Sharpness',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_SHARPNESS_CONTROL ,
 'bit_mask':1 << 4,
 'offset': 0 ,
@@ -349,7 +349,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Gamma',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_GAMMA_CONTROL ,
 'bit_mask':1 << 5,
 'offset': 0 ,
@@ -365,7 +365,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'White Balance temperature',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL ,
 'bit_mask': 1 << 6,
 'offset': 0 ,
@@ -381,7 +381,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'White Balance temperature,Auto',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL ,
 'bit_mask': 1 << 12,
 'offset': 0 ,
@@ -397,7 +397,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'White Balance component,Auto',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_WHITE_BALANCE_COMPONENT_AUTO_CONTROL ,
 'bit_mask': 1 << 13,
 'offset': 0 ,
@@ -413,7 +413,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Digital Multiplier',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_DIGITAL_MULTIPLIER_CONTROL,
 'bit_mask': 1 << 14,
 'offset': 0 ,
@@ -429,7 +429,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Digital Multiplier limit control',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_DIGITAL_MULTIPLIER_LIMIT_CONTROL,
 'bit_mask': 1 << 15,
 'offset': 0 ,
@@ -445,7 +445,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Analog video standard',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_ANALOG_VIDEO_STANDARD_CONTROL,
 'bit_mask': 1 << 15,
 'offset': 0 ,
@@ -461,7 +461,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Analog lock status control',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_ANALOG_LOCK_STATUS_CONTROL,
 'bit_mask': 1 << 17,
 'offset': 0 ,
@@ -477,7 +477,7 @@ before attempting to change this setting.'
 ,
 {
 'display_name': 'Hue Auto control',
-'unit': 'processing_terminal',
+'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_HUE_AUTO_CONTROL ,
 'bit_mask':1 << 11,
 'offset': 0 ,
