@@ -175,7 +175,7 @@ before attempting to change this setting.'
 'display_name': 'Zoom absolute control',
 'unit': 'input_terminal',
 'control_id': uvc.UVC_CT_ZOOM_ABSOLUTE_CONTROL ,
-'bit_mask': 1 << 4,
+'bit_mask': 1 << 9,
 'offset': 0 ,
 'data_len': 2 ,
 'buffer_len': 2,
@@ -185,6 +185,38 @@ before attempting to change this setting.'
 'def_val':None,
 'd_type': int,
 'doc': 'The Zoom (Absolute) Control.'
+}
+,
+{
+'display_name': 'Pan control',
+'unit': 'input_terminal',
+'control_id': uvc.UVC_CT_PANTILT_ABSOLUTE_CONTROL ,
+'bit_mask': 1 << 11,
+'offset': 0 ,
+'data_len': 4 ,
+'buffer_len': 8,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None,
+'d_type': int,
+'doc': 'Pan (Absolute) Control.'
+}
+,
+{
+'display_name': 'Tilt control',
+'unit': 'input_terminal',
+'control_id': uvc.UVC_CT_PANTILT_ABSOLUTE_CONTROL ,
+'bit_mask': 1 << 11,
+'offset': 4 ,
+'data_len': 4 ,
+'buffer_len': 8,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None,
+'d_type': int,
+'doc': 'Tilt (Absolute) Control.'
 }
 ,
 {
@@ -380,6 +412,37 @@ before attempting to change this setting.'
 }
 ,
 {
+'display_name': 'White Balance temperature blue',
+'unit': 'processing_unit',
+'control_id': uvc.UVC_PU_WHITE_BALANCE_COMPONENT_CONTROL ,
+'bit_mask': 1 << 7,
+'offset': 0 ,
+'data_len': 2 ,
+'buffer_len': 4,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None,
+'d_type': int,
+'doc': 'Set the blue component for white balance.'
+}
+,{
+'display_name': 'White Balance temperature red',
+'unit': 'processing_unit',
+'control_id': uvc.UVC_PU_WHITE_BALANCE_COMPONENT_CONTROL ,
+'bit_mask': 1 << 7,
+'offset': 2 ,
+'data_len': 2 ,
+'buffer_len': 4,
+'min_val': None,
+'max_val': None,
+'step':None,
+'def_val':None,
+'d_type': int,
+'doc': 'Set the red component for white balance.'
+}
+,
+{
 'display_name': 'White Balance temperature,Auto',
 'unit': 'processing_unit',
 'control_id': uvc.UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL ,
@@ -391,7 +454,7 @@ before attempting to change this setting.'
 'max_val': 1,
 'step':1,
 'def_val':None,
-'d_type': bool,
+'d_type': int,
 'doc': 'The White Balance Temperature Auto Control setting determines whether the device will provide automatic adjustment of the related control.1 indicates automatic adjustment is enabled'
 }
 ,
@@ -407,7 +470,7 @@ before attempting to change this setting.'
 'max_val': 1,
 'step':1,
 'def_val':None,
-'d_type': bool,
+'d_type': int,
 'doc': 'The White Balance Component Auto Control setting determines whether the device will provide automatic adjustment of the related control.'
 }
 ,
@@ -601,6 +664,9 @@ cdef class Control:
         memset(data,0,12)
 
         cdef int ret
+        if self.data_len != self.buffer_len:
+            #read-modify-write
+            uvc.uvc_get_ctrl(self.devh, self.unit_id, self.control_id,data,self.buffer_len, uvc.UVC_GET_CUR)
 
         if self.data_len ==1:
             data[0] = value
@@ -609,7 +675,7 @@ cdef class Control:
         else:
             uvc.INT_TO_DW(value,data+self.offset)
 
-        ret =  uvc.uvc_set_ctrl(self.devh, self.unit_id, self.control_id,data,self.data_len)
+        ret =  uvc.uvc_set_ctrl(self.devh, self.unit_id, self.control_id,data,self.buffer_len)
         if ret <= 0: #== self.buffer_len
             raise Exception("Error: %s"%uvc_error_codes[ret])
 
