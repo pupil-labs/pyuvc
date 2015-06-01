@@ -88,7 +88,7 @@ before attempting to change this setting.'
 'step':None,
 'def_val':None,
 'd_type': int,
-'doc': 'The settings for Absolute Focus'
+'doc': 'Set Absolute Focus'
 }
 ,
 {
@@ -104,7 +104,7 @@ before attempting to change this setting.'
 'step':None,
 'def_val':None,
 'd_type': int,
-'doc': 'The setting for Absolute Iris Control.'
+'doc': 'Set Absolute Iris Control.'
 }
 ,
 {
@@ -119,57 +119,57 @@ before attempting to change this setting.'
 'max_val': 1,
 'step':1,
 'def_val':0,#I have assumed the defaul value as 0 becuase nothing was specified
-'d_type': bool,
-'doc': 'The setting for Scanning control of camera sensor.0 means interlaced mode while 1 means non-interlaced or progressive mode.'
+'d_type': {'interlaced':0,'progessive':1},
+'doc': 'Set the scanning mode'
 }
-,
-{
-'display_name': 'Exposure(time) relative',
-'unit': 'input_terminal',
-'control_id': uvc.UVC_CT_EXPOSURE_TIME_RELATIVE_CONTROL ,
-'bit_mask': 1 << 4,
-'offset': 0 ,
-'data_len': 1 ,
-'buffer_len': 1,
-'min_val': 0,#assumed
-'max_val': 255,#assumed
-'step':1,
-'def_val':0,
-'d_type': {'increment mode':1,'decrement mode':255},
-'doc': 'The setting for Exposure time relatvie control.'
-}
-,
-{
-'display_name': 'Focus relative',
-'unit': 'input_terminal',
-'control_id': uvc.UVC_CT_FOCUS_RELATIVE_CONTROL ,
-'bit_mask': 1 << 6,
-'offset':1 ,
-'data_len': 1 ,
-'buffer_len': 2,
-'min_val': None,
-'max_val': None,
-'step':None,
-'def_val':None,
-'d_type': {'Stop':0,'Focus Near direction':1,'Focus Infinite Direction':255},#Please check this field
-'doc': 'The setting for Relative focus.'
-}
-,
-{
-'display_name': 'Iris relative control',
-'unit': 'input_terminal',
-'control_id': uvc.UVC_CT_IRIS_RELATIVE_CONTROL ,
-'bit_mask': 1 << 8,
-'offset': 0,
-'data_len': 1,
-'buffer_len': 1,
-'min_val': 0,
-'max_val': 255, #Assumption
-'step':1,
-'def_val':0,
-'d_type': {'Default':0, 'Iris is opened my one step':1, 'Iris is closed by one step':255},
-'doc':'A step value of 1 indicates that the iris is opened 1 step further. A value of 0xFF indicates that the iris is closed 1 step further.'
-}
+#,
+#{
+#'display_name': 'Exposure(time) relative',
+#'unit': 'input_terminal',
+#'control_id': uvc.UVC_CT_EXPOSURE_TIME_RELATIVE_CONTROL ,
+#'bit_mask': 1 << 4,
+#'offset': 0 ,
+#'data_len': 1 ,
+#'buffer_len': 1,
+#'min_val': 0,#assumed
+#'max_val': 255,#assumed
+#'step':1,
+#'def_val':0,
+#'d_type': {'increment mode':1,'decrement mode':255},
+#'doc': 'The setting for Exposure time relatvie control.'
+#}
+#,
+#{
+#'display_name': 'Focus relative',
+#'unit': 'input_terminal',
+#'control_id': uvc.UVC_CT_FOCUS_RELATIVE_CONTROL ,
+#'bit_mask': 1 << 6,
+#'offset':1 ,
+#'data_len': 1 ,
+#'buffer_len': 2,
+#'min_val': None,
+#'max_val': None,
+#'step':None,
+#'def_val':None,
+#'d_type': {'Stop':0,'Focus Near direction':1,'Focus Infinite Direction':255},#Please check this field
+#'doc': 'The setting for Relative focus.'
+#}
+#,
+#{
+#'display_name': 'Iris relative control',
+#'unit': 'input_terminal',
+#'control_id': uvc.UVC_CT_IRIS_RELATIVE_CONTROL ,
+#'bit_mask': 1 << 8,
+#'offset': 0,
+#'data_len': 1,
+#'buffer_len': 1,
+#'min_val': 0,
+#'max_val': 255, #Assumption
+#'step':1,
+#'def_val':0,
+#'d_type': {'Default':0, 'Iris is opened my one step':1, 'Iris is closed by one step':255},
+#'doc':'A step value of 1 indicates that the iris is opened 1 step further. A value of 0xFF indicates that the iris is closed 1 step further.'
+#}
 ,
 {
 'display_name': 'Zoom absolute control',
@@ -184,7 +184,7 @@ before attempting to change this setting.'
 'step':None,
 'def_val':None,
 'd_type': int,
-'doc': 'The Zoom (Absolute) Control is used to specify or determine the Objective lens focal length.'
+'doc': 'The Zoom (Absolute) Control.'
 }
 ,
 {
@@ -388,10 +388,10 @@ before attempting to change this setting.'
 'data_len': 1 ,
 'buffer_len': 1,
 'min_val': 0,
-'max_val': 1,#unspecified therefore assumed as 1
-'step':1, #unspecified
+'max_val': 1,
+'step':1,
 'def_val':None,
-'d_type': int,
+'d_type': bool,
 'doc': 'The White Balance Temperature Auto Control setting determines whether the device will provide automatic adjustment of the related control.1 indicates automatic adjustment is enabled'
 }
 ,
@@ -404,10 +404,10 @@ before attempting to change this setting.'
 'data_len': 1 ,
 'buffer_len': 1,
 'min_val': 0,
-'max_val': 1,#unspecified therefore assumed as 1
-'step':1, #unspecified
+'max_val': 1,
+'step':1,
 'def_val':None,
-'d_type': int,
+'d_type': bool,
 'doc': 'The White Balance Component Auto Control setting determines whether the device will provide automatic adjustment of the related control.'
 }
 ,
@@ -557,10 +557,12 @@ cdef class Control:
         self.info_bit_mask = self._uvc_get(uvc.UVC_GET_INFO)
         self._value = self._uvc_get(uvc.UVC_GET_CUR)
         self.min_val = min_val if min_val != None else self._uvc_get(uvc.UVC_GET_MIN)
-        self.max_val = min_val if max_val != None else self._uvc_get(uvc.UVC_GET_MAX)
+        self.max_val = max_val if max_val != None else self._uvc_get(uvc.UVC_GET_MAX)
         self.step    = step    if step    != None else self._uvc_get(uvc.UVC_GET_RES)
         self.def_val = def_val if def_val != None else self._uvc_get(uvc.UVC_GET_DEF)
 
+        if self.d_type == int and len(range(self.min_val,self.max_val+1,self.step)) == 2:
+            self.d_type = bool
         #we could filter out unsupported entries but device dont always implement this correctly.
         #if type(self.d_type) == dict:
         #    possible_vals = range(self.min_val,self.max_val+1,self.step)
@@ -622,4 +624,7 @@ cdef class Control:
                 self._uvc_set(value)
             except:
                 logger.warning("Could not set Value. Must be read only")
-            self._value = self._uvc_get(uvc.UVC_GET_CUR)
+            try:
+                self._value = self._uvc_get(uvc.UVC_GET_CUR)
+            except:
+                logger.warning("Could not get Value. Must be read disabled.")
