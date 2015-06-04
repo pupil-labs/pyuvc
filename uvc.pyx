@@ -307,6 +307,7 @@ cdef class Capture:
     cdef uvc.uvc_stream_ctrl_t ctrl
     cdef bint _stream_on,_configured
     cdef uvc.uvc_stream_handle_t *strmh
+    cdef float bandwidth_factor
 
     cdef tuple _active_mode
     cdef list _available_modes
@@ -324,6 +325,7 @@ cdef class Capture:
         self._active_mode = None,None,None
         self._info = {}
         self.controls = []
+        self.bandwidth_factor = 1.5
 
     def __init__(self,dev_uid):
 
@@ -437,7 +439,7 @@ cdef class Capture:
         status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl)
         if status != uvc.UVC_SUCCESS:
             raise Exception("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
-        status = uvc.uvc_stream_start(self.strmh, NULL, NULL,0)
+        status = uvc.uvc_stream_start(self.strmh, NULL, NULL,self.bandwidth_factor,0)
         if status != uvc.UVC_SUCCESS:
             raise Exception("Can't start isochronous stream: Error:'%s'."%uvc_error_codes[status])
         self._stream_on = 1

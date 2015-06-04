@@ -386,7 +386,7 @@ cdef extern from  "libuvc/libuvc.h":
 
     uvc_error_t uvc_stream_open_ctrl(uvc_device_handle_t *devh, uvc_stream_handle_t **strmh, uvc_stream_ctrl_t *ctrl)
     uvc_error_t set_uvc_stream_ctrl"uvc_stream_ctrl"(uvc_stream_handle_t *strmh, uvc_stream_ctrl_t *ctrl)
-    uvc_error_t uvc_stream_start(uvc_stream_handle_t *strmh,uvc_frame_callback_t *cb,void *user_ptr,uint8_t flags)
+    uvc_error_t uvc_stream_start(uvc_stream_handle_t *strmh,uvc_frame_callback_t *cb,void *user_ptr,float bandwidth_factor, uint8_t flags)
     #uvc_error_t uvc_stream_start_iso(uvc_stream_handle_t *strmh, uvc_frame_callback_t *cb, void *user_ptr)
 
     uvc_error_t uvc_stream_get_frame( uvc_stream_handle_t *strmh, uvc_frame_t **frame, int timeout_us)
