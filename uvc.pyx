@@ -540,9 +540,12 @@ cdef class Capture:
                 logger.debug('Adding "%s" control.'%std_ctl['display_name'])
 
                 std_ctl['unit_id'] = id_per_unit[std_ctl['unit']]
-                control= Control(cap = self,**std_ctl)
-
-                self.controls.append(control)
+                try:
+                    control= Control(cap = self,**std_ctl)
+                except:
+                    logger.error("Could not init '%s'!" %std_ctl['display_name'])
+                else:
+                    self.controls.append(control)
 
 
         #uvc.PyEval_InitThreads()
