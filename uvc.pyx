@@ -81,6 +81,7 @@ cdef class Frame:
     cdef bint _yuv_converted, _bgr_converted
     cdef public double timestamp
     cdef public int width,height, yuv_subsampling
+    cdef readonly int index
 
     def __cinit__(self):
         # pass
@@ -314,7 +315,7 @@ cdef class Capture:
     cdef dict _info
     cdef public list controls
 
-    def __cinit__(self,dev_uid):
+    def __cinit__(self,dev_uid,float bandwidth_factor=2.0):
         self.dev = NULL
         self.ctx = NULL
         self.devh = NULL
@@ -325,9 +326,9 @@ cdef class Capture:
         self._active_mode = None,None,None
         self._info = {}
         self.controls = []
-        self.bandwidth_factor = 1.5
+        self.bandwidth_factor = bandwidth_factor
 
-    def __init__(self,dev_uid):
+    def __init__(self,dev_uid,float bandwidth_factor=2.0):
 
         #setup for jpeg converter
         self.tj_context = turbojpeg.tjInitDecompress()
@@ -489,7 +490,7 @@ cdef class Capture:
 
         cdef Frame out_frame = Frame()
         out_frame.tj_context = self.tj_context
-
+        out_frame.index = uvc_frame.sequence
         out_frame.width,out_frame.height = uvc_frame.width,uvc_frame.height
         cdef buffer_handle buf = buffer_handle()
         buf.start = uvc_frame.data
