@@ -164,6 +164,41 @@ cdef class Frame:
                 V = V[::2,::2]
             return Y,U,V
 
+    property yuv422:
+        def __get__(self):
+            '''
+            planar YUV420 returned in 3 numpy arrays:
+            422 subsampling:
+                Y(height,width) U(height,width/2), V(height,width/2)
+            '''
+            if self._yuv_converted is False:
+                if self._jpeg_buffer.start != NULL:
+                    self.jpeg2yuv()
+                else:
+                    raise Exception("No source image data found to convert from.")
+
+            cdef np.ndarray[np.uint8_t, ndim=2] Y,U,V
+            y_plane_len = self.width*self.height
+            Y = np.asarray(self._yuv_buffer[:y_plane_len]).reshape(self.height,self.width)
+
+            if self.yuv_subsampling == turbojpeg.TJSAMP_422:
+                uv_plane_len = y_plane_len/2
+                offset = y_plane_len
+                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width/2)
+                offset += uv_plane_len
+                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width/2)
+            elif self.yuv_subsampling == turbojpeg.TJSAMP_420:
+                raise Exception("can not convert from YUV420 to YUV422")
+            elif self.yuv_subsampling == turbojpeg.TJSAMP_444:
+                uv_plane_len = y_plane_len
+                offset = y_plane_len
+                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width)
+                offset += uv_plane_len
+                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width)
+                #hack solution to go from YUV444 to YUV420
+                U = U[:,::2]
+                V = V[:,::2]
+            return Y,U,V
     property gray:
         def __get__(self):
             # return gray aka luminace plane of YUV image.
