@@ -54,7 +54,9 @@ cdef class buffer_handle:
     def __repr__(self):
         return  "Buffer pointing to %s. length: %s"%(<int>self.start,self.length)
 
-
+    def view(self):
+        cdef char[::1] view = <char[:self.length]>self.start
+        return view
 
 cdef class Frame:
     '''
