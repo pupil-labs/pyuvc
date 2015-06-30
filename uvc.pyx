@@ -239,10 +239,6 @@ cdef class Frame:
         self._yuv_converted = False
 
 
-def test():
-    cdef uvc.uvc_context_t * ctx
-    print uvc.uvc_init(&ctx,NULL)
-    uvc.uvc_exit(ctx)
 
 def device_list():
     cdef uvc.uvc_context_t * ctx
@@ -308,14 +304,14 @@ cdef class Capture:
     cdef uvc.uvc_stream_ctrl_t ctrl
     cdef bint _stream_on,_configured
     cdef uvc.uvc_stream_handle_t *strmh
-    cdef float bandwidth_factor
+    cdef float _bandwidth_factor
 
     cdef tuple _active_mode
     cdef list _available_modes
     cdef dict _info
     cdef public list controls
 
-    def __cinit__(self,dev_uid,float bandwidth_factor=2.0):
+    def __cinit__(self,dev_uid):
         self.dev = NULL
         self.ctx = NULL
         self.devh = NULL
@@ -326,9 +322,9 @@ cdef class Capture:
         self._active_mode = None,None,None
         self._info = {}
         self.controls = []
-        self.bandwidth_factor = bandwidth_factor
+        self._bandwidth_factor = 2.0
 
-    def __init__(self,dev_uid,float bandwidth_factor=2.0):
+    def __init__(self,dev_uid):
 
         #setup for jpeg converter
         self.tj_context = turbojpeg.tjInitDecompress()
@@ -440,7 +436,7 @@ cdef class Capture:
         status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl)
         if status != uvc.UVC_SUCCESS:
             raise Exception("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
-        status = uvc.uvc_stream_start(self.strmh, NULL, NULL,self.bandwidth_factor,0)
+        status = uvc.uvc_stream_start(self.strmh, NULL, NULL,self._bandwidth_factor,0)
         if status != uvc.UVC_SUCCESS:
             raise Exception("Can't start isochronous stream: Error:'%s'."%uvc_error_codes[status])
         self._stream_on = 1
@@ -638,6 +634,15 @@ cdef class Capture:
     property name:
         def __get__(self):
             return self._info['name']
+
+    property bandwidth_factor:
+        def __get__(self):
+            return self._bandwidth_factor
+        def __set__(self,bandwidth_factor):
+            if self._bandwidth_factor != bandwidth_factor:
+                self._bandwidth_factor = bandwidth_factor
+                if self._stream_on:
+                    self._stop()
 
 cdef void on_status_update(uvc.uvc_status_class status_class,
                         int event,
