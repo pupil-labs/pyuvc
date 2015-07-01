@@ -121,7 +121,7 @@ cdef class Frame:
             return buf
 
 
-    property yuv:
+    property yuv420:
         def __get__(self):
             '''
             planar YUV420 returned in 3 numpy arrays:
@@ -217,7 +217,7 @@ cdef class Frame:
         def __get__(self):
             if self._bgr_converted is False:
                 #toggle conversion if needed
-                _ = self.yuv
+                _ = self.yuv422_buffer
                 self.yuv2bgr()
 
             cdef np.ndarray[np.uint8_t, ndim=3] BGR
