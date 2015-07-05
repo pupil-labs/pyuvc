@@ -9,12 +9,13 @@
 '''
 
 import cython
+#from libc.stdint cimport uint8_t
 from libc.string cimport memset
 cimport cuvc as uvc
 cimport cturbojpeg as turbojpeg
 cimport numpy as np
 import numpy as np
-
+from cuvc cimport uvc_frame_t
 
 uvc_error_codes = {  0:"Success (no error)",
                     -1:"Input/output error.",
@@ -44,19 +45,8 @@ class CaptureError(Exception):
 import logging
 logger = logging.getLogger(__name__)
 
-__version__ = '0.1' #make sure this is the same in setup.py
+__version__ = '0.2' #make sure this is the same in setup.py
 
-
-cdef class buffer_handle:
-    cdef void *start
-    cdef size_t length
-
-    def __repr__(self):
-        return  "Buffer pointing to %s. length: %s"%(<int>self.start,self.length)
-
-    def view(self):
-        cdef char[::1] view = <char[:self.length]>self.start
-        return view
 
 cdef class Frame:
     '''
@@ -78,48 +68,51 @@ cdef class Frame:
     '''
 
     cdef turbojpeg.tjhandle tj_context
-    cdef buffer_handle _jpeg_buffer
+    cdef uvc.uvc_frame * _uvc_frame
     cdef unsigned char[:] _bgr_buffer, _gray_buffer,_yuv_buffer #we use numpy for memory management.
     cdef bint _yuv_converted, _bgr_converted
     cdef public double timestamp
-    cdef public int width,height, yuv_subsampling
-    cdef readonly int index
+    cdef public yuv_subsampling
+    cdef bint owns_uvc_frame
 
     def __cinit__(self):
-        # pass
-        # self._jpeg_buffer.start = NULL doing this leads to the very strange behaivour of numpy slicing to break!
         self._yuv_converted = False
         self._bgr_converted = False
+        self.tj_context = NULL
+
     def __init__(self):
         pass
 
+    cdef attach_uvcframe(self,uvc.uvc_frame *uvc_frame,copy=True):
+        if copy:
+            self._uvc_frame = uvc.uvc_allocate_frame(uvc_frame.data_bytes)
+            uvc.uvc_duplicate_frame(uvc_frame,self._uvc_frame)
+            self.owns_uvc_frame = True
+        else:
+            self._uvc_frame = uvc_frame
+            self.owns_uvc_frame = False
+
+
+    def __dealloc__(self):
+        if self.owns_uvc_frame:
+            uvc.uvc_free_frame(self._uvc_frame)
+
+    property width:
+        def __get__(self):
+            return self._uvc_frame.width
+
+    property height:
+        def __get__(self):
+            return self._uvc_frame.height
+
+    property index:
+        def __get__(self):
+            return self._uvc_frame.sequence
 
     property jpeg_buffer:
-        def __set__(self,buffer_handle buffer):
-            self._jpeg_buffer = buffer
-
         def __get__(self):
-            #retuns buffer handle to jpeg buffer
-            if self._jpeg_buffer.start == NULL:
-                raise Exception("jpeg buffer not used and not allocated.")
-            return self._jpeg_buffer
-
-
-    property yuv422_buffer:
-        def __get__(self):
-            #retuns buffer handle to yuv422 buffer
-            if self._yuv_converted == False:
-                if self._jpeg_buffer.start != NULL:
-                    self.jpeg2yuv()
-                else:
-                    raise Exception("No source image data found to convert from.")
-            if self.yuv_subsampling != turbojpeg.TJSAMP_422:
-                raise Exception('YUV buffer avaible but not in yuv422.')
-            cdef buffer_handle buf = buffer_handle()
-            buf.start = <void*>(&self._yuv_buffer[0])
-            buf.length = self._yuv_buffer.shape[0]
-            return buf
-
+            cdef np.uint8_t[::1] view = <np.uint8_t[:self._uvc_frame.data_bytes]>self._uvc_frame.data
+            return view
 
     property yuv420:
         def __get__(self):
@@ -129,10 +122,7 @@ cdef class Frame:
                 Y(height,width) U(height/2,width/2), V(height/2,width/2)
             '''
             if self._yuv_converted is False:
-                if self._jpeg_buffer.start != NULL:
-                    self.jpeg2yuv()
-                else:
-                    raise Exception("No source image data found to convert from.")
+                self.jpeg2yuv()
 
             cdef np.ndarray[np.uint8_t, ndim=2] Y,U,V
             y_plane_len = self.width*self.height
@@ -172,10 +162,7 @@ cdef class Frame:
                 Y(height,width) U(height,width/2), V(height,width/2)
             '''
             if self._yuv_converted is False:
-                if self._jpeg_buffer.start != NULL:
-                    self.jpeg2yuv()
-                else:
-                    raise Exception("No source image data found to convert from.")
+                self.jpeg2yuv()
 
             cdef np.ndarray[np.uint8_t, ndim=2] Y,U,V
             y_plane_len = self.width*self.height
@@ -199,25 +186,23 @@ cdef class Frame:
                 U = U[:,::2]
                 V = V[:,::2]
             return Y,U,V
+
+
     property gray:
         def __get__(self):
             # return gray aka luminace plane of YUV image.
             if self._yuv_converted is False:
-                if self._jpeg_buffer.start != NULL:
-                    self.jpeg2yuv()
-                else:
-                    raise Exception("No source image data found to convert from.")
+                self.jpeg2yuv()
             cdef np.ndarray[np.uint8_t, ndim=2] Y
             Y = np.asarray(self._yuv_buffer[:self.width*self.height]).reshape(self.height,self.width)
             return Y
 
 
-
     property bgr:
         def __get__(self):
             if self._bgr_converted is False:
-                #toggle conversion if needed
-                _ = self.yuv422_buffer
+                if self._yuv_converted is False:
+                    self.jpeg2yuv()
                 self.yuv2bgr()
 
             cdef np.ndarray[np.uint8_t, ndim=3] BGR
@@ -248,8 +233,8 @@ cdef class Frame:
         cdef int jpegSubsamp, j_width,j_height
         cdef int result
         cdef long unsigned int buf_size
-        result = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>self._jpeg_buffer.start,
-                                        self._jpeg_buffer.length,
+        result = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>self._uvc_frame.data,
+                                        self._uvc_frame.data_bytes,
                                         &j_width, &j_height, &jpegSubsamp)
 
         if result == -1:
@@ -261,8 +246,8 @@ cdef class Frame:
         self._yuv_buffer = np.empty(buf_size, dtype=np.uint8)
         if result !=-1:
             result =  turbojpeg.tjDecompressToYUV(self.tj_context,
-                                             <unsigned char *>self._jpeg_buffer.start,
-                                             self._jpeg_buffer.length,
+                                             <unsigned char *>self._uvc_frame.data,
+                                             self._uvc_frame.data_bytes,
                                              &self._yuv_buffer[0],
                                               0)
         if result == -1:
@@ -515,27 +500,22 @@ cdef class Capture:
         if not self._stream_on:
             self._start()
         cdef uvc.uvc_frame *uvc_frame = NULL
+        #when this is called we will overwrite the last jpeg buffer! This can be dangerous!
         status = uvc.uvc_stream_get_frame(self.strmh,&uvc_frame,timeout_usec)
         if status !=uvc.UVC_SUCCESS:
             raise CaptureError(uvc_error_codes[status])
         if uvc_frame is NULL:
             raise CaptureError("Frame pointer is NULL")
 
+        ##check jpeg header
+        header_ok = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>uvc_frame.data, uvc_frame.data_bytes, &j_width, &j_height, &jpegSubsamp)
+        if not (header_ok >=0 and uvc_frame.width == j_width and uvc_frame.height == j_height):
+            raise CaptureError("JPEG header corrupted.")
+
+        # we have a valid, healthy jpeg.
         cdef Frame out_frame = Frame()
         out_frame.tj_context = self.tj_context
-        out_frame.index = uvc_frame.sequence
-        out_frame.width,out_frame.height = uvc_frame.width,uvc_frame.height
-        cdef buffer_handle buf = buffer_handle()
-        buf.start = uvc_frame.data
-        buf.length = uvc_frame.data_bytes
-
-
-        ##check jpeg header
-        header_ok = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>buf.start, buf.length, &j_width, &j_height, &jpegSubsamp)
-        if header_ok >=0 and out_frame.width == j_width and out_frame.height == out_frame.height:
-            out_frame.jpeg_buffer = buf
-        else:
-            raise CaptureError("JPEG header corrupted.")
+        out_frame.attach_uvcframe(uvc_frame = uvc_frame,copy=True)
         return out_frame
 
 

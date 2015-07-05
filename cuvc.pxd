@@ -329,6 +329,7 @@ cdef extern from  "libuvc/libuvc.h":
         int sequence
         #/** Estimate of system time when the device started capturing the image */
         timeval capture_time
+        uvc_device_handle_t * source
         int library_owns_data
     ctypedef uvc_frame uvc_frame_t
 
@@ -393,6 +394,9 @@ cdef extern from  "libuvc/libuvc.h":
     uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh)
     void uvc_stream_close(uvc_stream_handle_t *strmh)
 
+    uvc_frame_t *uvc_allocate_frame(size_t data_bytes)
+    void uvc_free_frame(uvc_frame_t *frame)
+    uvc_error_t uvc_duplicate_frame(uvc_frame_t *in_frame, uvc_frame_t *out_frame)
 
     int uvc_get_ctrl_len(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl)
     int uvc_get_ctrl(uvc_device_handle_t *devh, uint8_t unit, uint8_t ctrl, void *data, int len, uvc_req_code req_code)
