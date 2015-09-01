@@ -45,7 +45,7 @@ class CaptureError(Exception):
 import logging
 logger = logging.getLogger(__name__)
 
-__version__ = '0.2' #make sure this is the same in setup.py
+__version__ = '0.3' #make sure this is the same in setup.py
 
 
 cdef class Frame:
@@ -689,3 +689,44 @@ cdef inline str uint_array_to_GuidCode(uvc.uint8_t * u):
 #    return t.tv_sec + <double>t.tv_nsec * 1e-9
 
 
+def is_accessible(dev_uid):
+    cdef uvc.uvc_context_t * ctx
+    cdef uvc.uvc_device_t ** dev_list
+    cdef uvc.uvc_device_t * dev = NULL
+    cdef uvc.uvc_device_handle_t *devh
+
+    cdef int ret = uvc.uvc_init(&ctx,NULL)
+    if ret !=uvc.UVC_SUCCESS:
+        raise Exception("Could not initialize")
+
+    ret = uvc.uvc_get_device_list(ctx,&dev_list)
+    if ret !=uvc.UVC_SUCCESS:
+        raise Exception("could not get devices list.")
+
+    cdef int idx = 0
+    while True:
+        dev = dev_list[idx]
+        if dev == NULL:
+            break
+        device_address = uvc.uvc_get_device_address(dev)
+        bus_number = uvc.uvc_get_bus_number(dev)
+        if dev_uid == '%s:%s'%(bus_number,device_address):
+            logger.debug("Found device that mached uid:'%s'"%dev_uid)
+            uvc.uvc_ref_device(dev)
+            break
+        idx +=1
+    uvc.uvc_free_device_list(dev_list, 1)
+    if dev == NULL:
+        raise Exception("Device with uid: '%s' not found"%dev_uid)
+
+    #once found we open the device
+    error = uvc.uvc_open(dev,&devh)
+    if error != uvc.UVC_SUCCESS:
+        uvc.uvc_unref_device(dev)
+        uvc.uvc_exit(ctx)
+        return False
+    else:
+        uvc.uvc_close(devh)
+        uvc.uvc_unref_device(dev)
+        uvc.uvc_exit(ctx)
+        return True

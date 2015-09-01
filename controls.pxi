@@ -689,7 +689,7 @@ cdef class Control:
             try:
                 self._uvc_set(value)
             except:
-                logger.warning("Could not set Value. Must be read only")
+                logger.warning("Could not set Value. '%s' must be read only"%self.display_name)
             try:
                 self._value = self._uvc_get(uvc.UVC_GET_CUR)
             except:
