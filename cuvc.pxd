@@ -62,7 +62,10 @@ cdef extern from  "libuvc/libuvc.h":
 
     ctypedef int uint8_t
     ctypedef int uint16_t
+    ctypedef int int16_t
+    ctypedef int uint16_t
     ctypedef int uint32_t
+    ctypedef int int32_t
     ctypedef int uint64_t
 
     cdef enum uvc_error:
@@ -405,17 +408,17 @@ cdef extern from  "libuvc/libuvc.h":
 
 
 #/** Converts an unaligned four-byte little-endian integer into an int32 */
-cdef inline int DW_TO_INT(uint8_t *p):
+cdef inline int32_t DW_TO_INT(uint8_t *p):
     return (p)[0] | ((p)[1] << 8) | ((p)[2] << 16) | ((p)[3] << 24)
 #/** Converts an unaligned two-byte little-endian integer into an int16 */
-cdef inline int SW_TO_SHORT(uint8_t *p):
+cdef inline int16_t SW_TO_SHORT(uint8_t *p):
     return (p)[0] | ((p)[1] << 8)
 #/** Converts an int16 into an unaligned two-byte little-endian integer */
-cdef inline void SHORT_TO_SW(short s, uint8_t *p):
+cdef inline void SHORT_TO_SW(int16_t s, uint8_t *p):
     p[0] = s
     p[1] = s >> 8
 #/** Converts an int32 into an unaligned four-byte little-endian integer */
-cdef inline void INT_TO_DW(int i, uint8_t *p):
+cdef inline void INT_TO_DW(int32_t i, uint8_t *p):
     p[0] = i
     p[1] = i >> 8
     p[2] = i >> 16
