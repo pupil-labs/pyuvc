@@ -118,8 +118,7 @@ cdef class Frame:
         def __get__(self):
             if self._yuv_converted is False:
                 self.jpeg2yuv()
-            cdef size_t buf_size = turbojpeg.tjBufSizeYUV(self.width, self.height, self.yuv_subsampling)
-            cdef np.uint8_t[::1] view = <np.uint8_t[:buf_size]>&self._yuv_buffer[0]
+            cdef np.uint8_t[::1] view = <np.uint8_t[:self._yuv_buffer.shape[0]]>&self._yuv_buffer[0]
             return view
 
     property yuv420:
