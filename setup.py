@@ -30,7 +30,7 @@ elif platform.system() == 'Linux':
     except IndexError:
        raise Exception("Please install libturbojpeg")
     libs  = ['rt']
-    extra_link_args = ['-Wl,-R/usr/local/lib/']
+    extra_link_args = []#['-Wl,-R/usr/local/lib/']
     include_dirs = ['/opt/libjpeg-turbo/include']
 elif platform.system() == 'Windows':
     raise NotImplementedError("please fix me.")
@@ -48,7 +48,7 @@ extensions = [
 ]
 
 setup(  name="uvc",
-        version="0.4", #make sure this is the same in v4l2.pxy
+        version="0.5", #make sure this is the same in v4l2.pxy
         description="Usb Video Class Device bindings with format conversion tool.",
         ext_modules=cythonize(extensions)
 )

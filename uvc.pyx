@@ -9,13 +9,19 @@
 '''
 
 import cython
-#from libc.stdint cimport uint8_t
 from libc.string cimport memset
 cimport cuvc as uvc
 cimport cturbojpeg as turbojpeg
 cimport numpy as np
 import numpy as np
 from cuvc cimport uvc_frame_t
+
+IF UNAME_SYSNAME == "Windows":
+    include "windows_time.pxi"
+ELIF UNAME_SYSNAME == "Darwin":
+    include "darwin_time.pxi"
+ELIF UNAME_SYSNAME == "Linux":
+    include "linux_time.pxi"
 
 uvc_error_codes = {  0:"Success (no error)",
                     -1:"Input/output error.",
@@ -45,7 +51,7 @@ class CaptureError(Exception):
 import logging
 logger = logging.getLogger(__name__)
 
-__version__ = '0.4' #make sure this is the same in setup.py
+__version__ = '0.5' #make sure this is the same in setup.py
 
 
 cdef class Frame:
@@ -690,11 +696,8 @@ cdef inline str uint_array_to_GuidCode(uvc.uint8_t * u):
         s += "{0:0{1}x}".format(u[x],2) # map int to rwo digit hex without "0x" prefix.
     return '%s%s%s%s%s%s%s%s-%s%s%s%s-%s%s%s%s-%s%s%s%s-%s%s%s%s%s%s%s%s%s%s%s%s'%tuple(s)
 
-#def get_sys_time_monotonic():
-#    cdef time.timespec t
-#    time.clock_gettime(time.CLOCK_MONOTONIC, &t)
-#    return t.tv_sec + <double>t.tv_nsec * 1e-9
-
+def get_time_monotonic():
+    return get_sys_time_monotonic()
 
 def is_accessible(dev_uid):
     cdef uvc.uvc_context_t * ctx
@@ -737,3 +740,5 @@ def is_accessible(dev_uid):
         uvc.uvc_unref_device(dev)
         uvc.uvc_exit(ctx)
         return True
+
+
