@@ -91,9 +91,10 @@ make && sudo make install
 brew install libjpeg-turbo
 ```
 
-### cython
+### cython,numpy
 ```
 pip install cython
+pip install numpy
 ```
 
 ## just build locally
