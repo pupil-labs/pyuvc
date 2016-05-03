@@ -47,11 +47,21 @@ class CaptureError(Exception):
         super(CaptureError, self).__init__()
         self.message = message
 
+class StreamError(CaptureError):
+    def __init__(self, message):
+        super(StreamError, self).__init__(message)
+        self.message = message
+
+class InitError(CaptureError):
+    def __init__(self, message):
+        super(InitError, self).__init__(message)
+        self.message = message
+
 #logging
 import logging
 logger = logging.getLogger(__name__)
 
-__version__ = '0.5' #make sure this is the same in setup.py
+__version__ = '0.6' #make sure this is the same in setup.py
 
 
 cdef class Frame:
@@ -69,7 +79,7 @@ cdef class Frame:
 
     WARNING:
     When capture.get_frame() is called again previos instances of Frame will point to invalid memory.
-    Specifically the image format in the capture transport format.
+    Specifically all image data in the capture transport format.
     Previously converted formats are still valid.
     '''
 
@@ -365,7 +375,7 @@ cdef class Capture:
         self.tj_context = turbojpeg.tjInitDecompress()
 
         if uvc.uvc_init(&self.ctx, NULL) != uvc.UVC_SUCCESS:
-            raise Exception('Could not init libuvc')
+            raise InitError('Could not init libuvc')
 
         self._init_device(dev_uid)
         self._enumerate_formats()
@@ -380,7 +390,7 @@ cdef class Capture:
         cdef int error
         if uvc.uvc_get_device_list(self.ctx,&dev_list) !=uvc.UVC_SUCCESS:
             uvc.uvc_exit(self.ctx)
-            raise Exception("could not get devices list.")
+            raise InitError("could not get devices list.")
 
         while True:
             dev = dev_list[idx]
@@ -412,14 +422,14 @@ cdef class Capture:
 
         uvc.uvc_free_device_list(dev_list, 1)
         if dev == NULL:
-            raise Exception("Device with uid: '%s' not found"%dev_uid)
+            raise ValueError("Device with uid: '%s' not found"%dev_uid)
 
 
         #once found we open the device
         self.dev = dev
         error = uvc.uvc_open(self.dev,&self.devh)
         if error != uvc.UVC_SUCCESS:
-            raise Exception("could not open device. Error:%s"%uvc_error_codes[error])
+            raise InitError("could not open device. Error:%s"%uvc_error_codes[error])
         logger.debug("Device '%s' opended."%dev_uid)
 
     cdef _de_init_device(self):
@@ -439,9 +449,9 @@ cdef class Capture:
             uvc.uvc_exit(self.ctx)
             turbojpeg.tjDestroy(self.tj_context)
 
-
     cdef _restart(self):
         self._stop()
+        self._re_init_device()
         self._start()
 
     def print_info(self):
@@ -459,7 +469,7 @@ cdef class Capture:
                                                       uvc.UVC_FRAME_FORMAT_COMPRESSED,
                                                       mode[0],mode[1],mode[2] )
         if status != uvc.UVC_SUCCESS:
-            raise Exception("Can't get stream control: Error:'%s'."%uvc_error_codes[status])
+            raise InitError("Can't get stream control: Error:'%s'."%uvc_error_codes[status])
         self._configured = 1
         self._active_mode = mode
 
@@ -470,10 +480,10 @@ cdef class Capture:
             self._configure_stream()
         status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl)
         if status != uvc.UVC_SUCCESS:
-            raise Exception("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
+            raise InitError("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
         status = uvc.uvc_stream_start(self.strmh, NULL, NULL,self._bandwidth_factor,0)
         if status != uvc.UVC_SUCCESS:
-            raise Exception("Can't start isochronous stream: Error:'%s'."%uvc_error_codes[status])
+            raise InitError("Can't start isochronous stream: Error:'%s'."%uvc_error_codes[status])
         self._stream_on = 1
         logger.debug("Stream start.")
 
@@ -492,18 +502,15 @@ cdef class Capture:
         logger.debug("Stream stop.")
 
     def get_frame_robust(self):
-        cdef int a,r, attempts = 4,restarts = 2
-        for r in range(restarts):
-            for a in range(attempts):
-                try:
-                    frame = self.get_frame()
-                except CaptureError as e:
-                    logger.debug('Could not get Frame. Error: "%s". Tried %s times.'%(e.message,a))
-                else:
-                    return frame
-            logger.warning("Could not grab frame. Restarting device")
-            self._restart()
-        raise Exception("Could not grab frame. Giving up.")
+        cdef int a,attempts = 3
+        for a in range(attempts):
+            try:
+                frame = self.get_frame()
+            except StreamError as e:
+                logger.info('Could not get Frame. Error: "%s". Attempt:%s/%s '%(e.message,a+1,attempts))
+            else:
+                return frame
+        raise StreamError("Could not grab frame after 3 attempts. Giving up.")
 
 
 
@@ -516,14 +523,14 @@ cdef class Capture:
         #when this is called we will overwrite the last jpeg buffer! This can be dangerous!
         status = uvc.uvc_stream_get_frame(self.strmh,&uvc_frame,timeout_usec)
         if status !=uvc.UVC_SUCCESS:
-            raise CaptureError(uvc_error_codes[status])
+            raise StreamError(uvc_error_codes[status])
         if uvc_frame is NULL:
-            raise CaptureError("Frame pointer is NULL")
+            raise StreamError("Frame pointer is NULL")
 
         ##check jpeg header
         header_ok = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>uvc_frame.data, uvc_frame.data_bytes, &j_width, &j_height, &jpegSubsamp)
         if not (header_ok >=0 and uvc_frame.width == j_width and uvc_frame.height == j_height):
-            raise CaptureError("JPEG header corrupted.")
+            raise StreamError("JPEG header corrupted.")
 
         # we have a valid, healthy jpeg.
         cdef Frame out_frame = Frame()
@@ -623,7 +630,7 @@ cdef class Capture:
                     mode = size + (rate,)
                     self._configure_stream(mode)
                     return
-            raise Exception("Frame size not suported.")
+            raise ValueError("Frame size not suported.")
 
     property frame_rate:
         def __get__(self):
@@ -632,7 +639,7 @@ cdef class Capture:
             if  self._configured:
                 self.frame_mode = self._active_mode[:2]+(val,)
             else:
-                raise Exception('set frame size first.')
+                raise ValueError('set frame size first.')
 
     property frame_sizes:
         def __get__(self):
@@ -643,7 +650,7 @@ cdef class Capture:
             for m in self._available_modes:
                 if m['size'] == self.frame_size:
                     return m['rates']
-            raise Exception("Please set frame_size before asking for rates.")
+            raise ValueError("Please set frame_size before asking for rates.")
 
 
     property frame_mode:
@@ -707,11 +714,11 @@ def is_accessible(dev_uid):
 
     cdef int ret = uvc.uvc_init(&ctx,NULL)
     if ret !=uvc.UVC_SUCCESS:
-        raise Exception("Could not initialize")
+        raise InitError("Could not initialize")
 
     ret = uvc.uvc_get_device_list(ctx,&dev_list)
     if ret !=uvc.UVC_SUCCESS:
-        raise Exception("could not get devices list.")
+        raise InitError("could not get devices list.")
 
     cdef int idx = 0
     while True:
@@ -727,7 +734,7 @@ def is_accessible(dev_uid):
         idx +=1
     uvc.uvc_free_device_list(dev_list, 1)
     if dev == NULL:
-        raise Exception("Device with uid: '%s' not found"%dev_uid)
+        raise ValueError("Device with uid: '%s' not found"%dev_uid)
 
     #once found we open the device
     error = uvc.uvc_open(dev,&devh)
