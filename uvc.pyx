@@ -521,7 +521,8 @@ cdef class Capture:
             self._start()
         cdef uvc.uvc_frame *uvc_frame = NULL
         #when this is called we will overwrite the last jpeg buffer! This can be dangerous!
-        status = uvc.uvc_stream_get_frame(self.strmh,&uvc_frame,timeout_usec)
+        with nogil:
+            status = uvc.uvc_stream_get_frame(self.strmh,&uvc_frame,timeout_usec)
         if status !=uvc.UVC_SUCCESS:
             raise StreamError(uvc_error_codes[status])
         if uvc_frame is NULL:
