@@ -61,7 +61,7 @@ class InitError(CaptureError):
 import logging
 logger = logging.getLogger(__name__)
 
-__version__ = '0.6' #make sure this is the same in setup.py
+__version__ = '0.7' #make sure this is the same in setup.py
 
 
 cdef class Frame:
@@ -246,7 +246,7 @@ cdef class Frame:
         result = turbojpeg.tjDecodeYUV(self.tj_context, &self._yuv_buffer[0], 4, self.yuv_subsampling,
                                         &self._bgr_buffer[0], self.width, 0, self.height, turbojpeg.TJPF_BGR, 0)
         if result == -1:
-            logger.error('Turbojpeg yuv2bgr error: %s'%turbojpeg.tjGetErrorStr() )
+            logger.error('Turbojpeg yuv2bgr: %s'%turbojpeg.tjGetErrorStr() )
         self._bgr_converted = True
 
 
@@ -274,7 +274,7 @@ cdef class Frame:
                                              &self._yuv_buffer[0],
                                               0)
         if result == -1:
-            logger.error('Turbojpeg jpeg2yuv error: %s'%turbojpeg.tjGetErrorStr() )
+            logger.warning('Turbojpeg jpeg2yuv: %s'%turbojpeg.tjGetErrorStr() )
         self.yuv_subsampling = jpegSubsamp
         self._yuv_converted = True
 
@@ -440,24 +440,10 @@ cdef class Capture:
         logger.debug('UVC device closed.')
 
 
-    def __dealloc__(self):
-        if self._stream_on:
-            self._stop()
-        if self.devh != NULL:
-            self._de_init_device()
-        if self.ctx != NULL:
-            uvc.uvc_exit(self.ctx)
-            turbojpeg.tjDestroy(self.tj_context)
-
     cdef _restart(self):
         self._stop()
         self._re_init_device()
         self._start()
-
-    def print_info(self):
-        print "Capture device"
-        for k,v in self._info.iteritems():
-            print '\t %s:%s'%(k,v)
 
     cdef _configure_stream(self,mode=(640,480,30)):
         cdef int status
@@ -497,7 +483,6 @@ cdef class Capture:
             logger.debug("Stream stopped")
         uvc.uvc_stream_close(self.strmh)
         logger.debug("Stream closed")
-        #uvc.uvc_stop_streaming(self.devh)
         self._stream_on = 0
         logger.debug("Stream stop.")
 
@@ -507,7 +492,10 @@ cdef class Capture:
             try:
                 frame = self.get_frame()
             except StreamError as e:
-                logger.info('Could not get Frame. Error: "%s". Attempt:%s/%s '%(e.message,a+1,attempts))
+                if a:
+                    logger.info('Could not get Frame: "%s". Attempt:%s/%s '%(e.message,a+1,attempts))
+                else:
+                    logger.debug('Could not get Frame of first try: "%s". Attempt:%s/%s '%(e.message,a+1,attempts))
             else:
                 return frame
         raise StreamError("Could not grab frame after 3 attempts. Giving up.")
@@ -531,9 +519,8 @@ cdef class Capture:
         ##check jpeg header
         header_ok = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>uvc_frame.data, uvc_frame.data_bytes, &j_width, &j_height, &jpegSubsamp)
         if not (header_ok >=0 and uvc_frame.width == j_width and uvc_frame.height == j_height):
-            raise StreamError("JPEG header corrupted.")
+            raise StreamError("JPEG header corrupt.")
 
-        # we have a valid, healthy jpeg.
         cdef Frame out_frame = Frame()
         out_frame.tj_context = self.tj_context
         out_frame.attach_uvcframe(uvc_frame = uvc_frame,copy=True)
@@ -612,6 +599,20 @@ cdef class Capture:
             format_desc = format_desc.next
 
         logger.debug('avaible video modes: %s'%self._available_modes)
+
+    def print_info(self):
+        print "Capture device"
+        for k,v in self._info.iteritems():
+            print '\t %s:%s'%(k,v)
+
+    def __dealloc__(self):
+        if self._stream_on:
+            self._stop()
+        if self.devh != NULL:
+            self._de_init_device()
+        if self.ctx != NULL:
+            uvc.uvc_exit(self.ctx)
+            turbojpeg.tjDestroy(self.tj_context)
 
 
     property frame_size:
