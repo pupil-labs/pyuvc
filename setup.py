@@ -19,7 +19,7 @@ libs = []
 extra_link_args = []
 if platform.system() == 'Darwin':
     try:
-        tj_lib = '/usr/local/opt/jpeg-turbo/lib/libturbojpeg.a'
+        tj_lib = glob.glob('/usr/local/opt/jpeg-turbo/lib/libturbojpeg.a')[0]
     except IndexError:
        raise Exception("Please install libturbojpeg")
     include_dirs = ['/usr/local/opt/jpeg-turbo/include/']
