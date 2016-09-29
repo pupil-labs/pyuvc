@@ -61,7 +61,7 @@ class InitError(CaptureError):
 import logging
 logger = logging.getLogger(__name__)
 
-__version__ = '0.7' #make sure this is the same in setup.py
+__version__ = '0.7.1' #make sure this is the same in setup.py
 
 
 cdef class Frame:
@@ -605,7 +605,8 @@ cdef class Capture:
         for k,v in self._info.iteritems():
             print '\t %s:%s'%(k,v)
 
-    def __dealloc__(self):
+
+    def close(self):
         if self._stream_on:
             self._stop()
         if self.devh != NULL:
@@ -613,6 +614,9 @@ cdef class Capture:
         if self.ctx != NULL:
             uvc.uvc_exit(self.ctx)
             turbojpeg.tjDestroy(self.tj_context)
+
+    def __dealloc__(self):
+        self.close()
 
 
     property frame_size:
