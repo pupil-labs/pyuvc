@@ -613,7 +613,9 @@ cdef class Capture:
             self._de_init_device()
         if self.ctx != NULL:
             uvc.uvc_exit(self.ctx)
+            self.ctx = NULL
             turbojpeg.tjDestroy(self.tj_context)
+            self.tj_context = NULL
 
     def __dealloc__(self):
         self.close()
