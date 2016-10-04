@@ -61,7 +61,7 @@ class InitError(CaptureError):
 import logging
 logger = logging.getLogger(__name__)
 
-__version__ = '0.7.1' #make sure this is the same in setup.py
+__version__ = '0.7.2' #make sure this is the same in setup.py
 
 
 cdef class Frame:
@@ -284,6 +284,75 @@ cdef class Frame:
         self._yuv_converted = False
 
 
+
+cdef class Device_List(list):
+    cdef uvc.uvc_context_t  * ctx
+
+
+    def __cinit__(self):
+        self.ctx = NULL
+        cdef int ret = uvc.uvc_init(&self.ctx,NULL)
+        if ret !=uvc.UVC_SUCCESS:
+            raise InitError("Could not initialize uvc context.")
+
+    def __init__(self):
+        self.update()
+
+    cpdef update(self):
+        cdef uvc.uvc_device_t ** dev_list
+        cdef uvc.uvc_device_t * dev
+        cdef uvc.uvc_device_descriptor_t *desc
+
+        if self.ctx == NULL:
+            raise EnvironmentError("Device list uvc context is NULL.")
+
+        ret = uvc.uvc_get_device_list(self.ctx,&dev_list)
+        if ret !=uvc.UVC_SUCCESS:
+            logger.error("could not get devices list.")
+            return
+
+        devices = []
+        cdef int idx = 0
+        while True:
+            dev = dev_list[idx]
+            if dev == NULL:
+                break
+            if (uvc.uvc_get_device_descriptor(dev, &desc) == uvc.UVC_SUCCESS):
+                product = desc.product or "unknown"
+                manufacturer = desc.manufacturer or "unknown"
+                serialNumber = desc.serialNumber or "unknown"
+                idProduct,idVendor = desc.idProduct,desc.idVendor
+                device_address = uvc.uvc_get_device_address(dev)
+                bus_number = uvc.uvc_get_bus_number(dev)
+                devices.append({'name':product,
+                                'manufacturer':manufacturer,
+                                'serialNumber':serialNumber,
+                                'idProduct':idProduct,
+                                'idVendor':idVendor,
+                                'device_address':device_address,
+                                'bus_number':bus_number,
+                                'uid':'%s:%s'%(bus_number,device_address)})
+
+            uvc.uvc_free_device_descriptor(desc)
+            idx +=1
+
+        uvc.uvc_free_device_list(dev_list, 1)
+
+        self[:] = devices
+
+    def __setitem__(self,index,value):
+        raise TypeError("This list does not support item assignment")
+
+    def __delitem__(self,index):
+        raise TypeError("This list does not support item deletion")
+
+    cpdef cleanup(self):
+        if self.ctx !=NULL:
+            uvc.uvc_exit(self.ctx)
+            self.ctx = NULL
+
+    def __dealloc__(self):
+        self.cleanup()
 
 def device_list():
     cdef uvc.uvc_context_t * ctx

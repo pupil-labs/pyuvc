@@ -48,7 +48,7 @@ extensions = [
 ]
 
 setup(  name="uvc",
-        version="0.7.1", #make sure this is the same in v4l2.pxy
+        version="0.7.2", #make sure this is the same in v4l2.pxy
         description="Usb Video Class Device bindings with format conversion tool.",
         ext_modules=cythonize(extensions)
 )
