@@ -633,8 +633,8 @@ cdef class Capture:
                 std_ctl['unit_id'] = id_per_unit[std_ctl['unit']]
                 try:
                     control= Control(cap = self,**std_ctl)
-                except:
-                    logger.error("Could not init '%s'!" %std_ctl['display_name'])
+                except Exception as e:
+                    logger.error("Could not init '%s'! Error: %s" %(std_ctl['display_name'],e))
                 else:
                     self.controls.append(control)
 
@@ -669,10 +669,8 @@ cdef class Capture:
 
         logger.debug('avaible video modes: %s'%self._available_modes)
 
-    def print_info(self):
-        print "Capture device"
-        for k,v in self._info.iteritems():
-            print '\t %s:%s'%(k,v)
+    def __str__(self):
+        return "Capture device \n\t" + "\n\t".join(('%s: %s'%(k,v) for k,v in self._info.iteritems()))
 
 
     def close(self):
@@ -765,9 +763,10 @@ cdef void on_status_update(uvc.uvc_status_class status_class,
                         void *data,
                         size_t data_len,
                         void *user_ptr) with gil:
-    print "Callback"
-    print status_class, event,selector,status_attribute,data_len
-    print <object>user_ptr
+    pass
+    #"Callback"
+    #status_class, event,selector,status_attribute,data_len
+    #<object>user_ptr
 
 cdef inline int interval_to_fps(int interval):
     return int(10000000./interval)

@@ -559,7 +559,7 @@ before attempting to change this setting.'
 
 cdef class Control:
     cdef uvc.uvc_device_handle_t *devh
-    cdef public bytes display_name,doc,unit
+    cdef public str display_name,doc,unit
     cdef int unit_id,control_id,offset,data_len,bit_mask,_value
     cdef readonly int min_val,max_val,step,def_val,buffer_len,info_bit_mask
     cdef public object d_type
@@ -636,13 +636,13 @@ cdef class Control:
         #            filtered_entries[key] = val
         #    self.d_type = filtered_entries
 
-    def print_info(self):
-        print self.display_name
-        print '\t value: %s'%self._value
-        print '\t min: %s'%self.min_val
-        print '\t max: %s'%self.max_val
-        print '\t step: %s'%self.step
-        print '\t default: %s'%self.def_val
+    def __str__(self):
+        return "%s"%self.display_name \
+        + '\n\t value: %s'%self._value \
+        + '\n\t min: %s'%self.min_val \
+        + '\n\t max: %s'%self.max_val \
+        + '\n\t step: %s'%self.step \
+        + '\n\t default: %s'%self.def_val
 
     cdef _uvc_get(self, req_code):
         cdef uvc.uint8_t data[12] #could be done dynamically
@@ -689,7 +689,7 @@ cdef class Control:
             try:
                 self._uvc_set(value)
             except:
-                logger.warning("Could not set Value. '%s' must be read only"%self.display_name)
+                logger.warning("Could not set Value. '%s'."%self.display_name)
             try:
                 self._value = self._uvc_get(uvc.UVC_GET_CUR)
             except:
