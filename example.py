@@ -1,6 +1,7 @@
+from __future__ import print_function
 import uvc
 import logging
-import cv2
+# import cv2
 from time import sleep
 logging.basicConfig(level=logging.DEBUG)
 from time import time,sleep
@@ -9,15 +10,15 @@ import numpy as np
 
 
 dev_list =  uvc.device_list()
-print dev_list
+print(dev_list)
 cap = uvc.Capture(dev_list[0]['uid'])
 for c in cap.controls:
-    print getattr(c,'value')
+    print(getattr(c,'value'))
     if 'Focus' in c.display_name:
         c.value = 0
-print cap.name
+print(cap.name)
 # print cap.avaible_modes
-cap.print_info()
+print(cap)
 for x in range(500):
 
     frame = cap.get_frame_robust()
