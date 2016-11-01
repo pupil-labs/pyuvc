@@ -57,6 +57,15 @@ class InitError(CaptureError):
         super(InitError, self).__init__(message)
         self.message = message
 
+class OpenError(InitError):
+    def __init__(self, message):
+        super(InitError, self).__init__(message)
+        self.message = message
+
+class DeviceNotFoundError(InitError):
+    def __init__(self, message):
+        super(InitError, self).__init__(message)
+        self.message = message
 #logging
 import logging
 logger = logging.getLogger(__name__)
@@ -491,14 +500,14 @@ cdef class Capture:
 
         uvc.uvc_free_device_list(dev_list, 1)
         if dev == NULL:
-            raise ValueError("Device with uid: '%s' not found"%dev_uid)
+            raise DeviceNotFoundError("Device with uid: '%s' not found"%dev_uid)
 
 
         #once found we open the device
         self.dev = dev
         error = uvc.uvc_open(self.dev,&self.devh)
         if error != uvc.UVC_SUCCESS:
-            raise InitError("could not open device. Error:%s"%uvc_error_codes[error])
+            raise OpenError("could not open device. Error:%s"%uvc_error_codes[error])
         logger.debug("Device '%s' opended."%dev_uid)
 
     cdef _de_init_device(self):
@@ -541,6 +550,10 @@ cdef class Capture:
             raise InitError("Can't start isochronous stream: Error:'%s'."%uvc_error_codes[status])
         self._stream_on = 1
         logger.debug("Stream start.")
+
+
+    def stop_stream(self):
+        self._stop()
 
     cdef _stop(self):
         cdef int status = 0
