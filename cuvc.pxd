@@ -8,11 +8,25 @@
 ----------------------------------------------------------------------------------~(*)
 '''
 
-from posix.time cimport timeval,timespec
+
 from libc.string cimport const_char
 
-cdef extern from "libusb-1.0/libusb.h":
-    pass
+IF UNAME_SYSNAME == "Windows":
+    from posix.types cimport suseconds_t, time_t
+    cdef extern from "<time.h>":
+        cdef struct timeval:
+            time_t      tv_sec
+            suseconds_t tv_usec
+
+        cdef struct timespec:
+            time_t tv_sec
+            long tv_nsec
+    cdef extern from "libusb/libusb.h":
+        pass
+ELSE:
+    from posix.time cimport timeval,timespec
+    cdef extern from "libusb-1.0/libusb.h":
+        pass
 
 cdef extern from "Python.h":
     void PyEval_InitThreads()

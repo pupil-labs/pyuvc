@@ -33,16 +33,26 @@ elif platform.system() == 'Linux':
     extra_link_args = []#['-Wl,-R/usr/local/lib/']
     include_dirs = ['/opt/libjpeg-turbo/include']
 elif platform.system() == 'Windows':
-    raise NotImplementedError("please fix me.")
+    uvc_dir =  'D:\\work\\github\\mylibuvc'
+    tj_dir = 'D:\\work\\libjpeg-turbo-VC64'
+    usb_dir = 'D:\\work\\github\\mylibusb\\libusb'
+
+    tj_lib = tj_dir + '\\lib\\turbojpeg.lib'
+    uvc_lib = uvc_dir + '\\bin\\Release\\uvc.lib'
+    libs  = [tj_lib, uvc_lib]
+    extra_link_args = []
+    include_dirs = [tj_dir + '\\include']
+    include_dirs += [usb_dir] + [usb_dir + '\\libusb']
+    include_dirs += [uvc_dir + '\\include'] + [uvc_dir + '\\bin\\include']
 
 
 extensions = [
     Extension(  name="uvc",
                 sources=['uvc.pyx'],
                 include_dirs =  [numpy.get_include()]+include_dirs,
-                libraries = ['uvc',]+libs,
+		libraries = libs,
                 extra_link_args=extra_link_args,
-                extra_objects = [tj_lib],
+                extra_objects = [tj_lib, uvc_lib],
                 extra_compile_args=[]
             ),
 ]
