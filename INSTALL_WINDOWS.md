@@ -1,10 +1,9 @@
-WINDOWS INSTALLATION INSTRUCTIONS
-------------------------------------
+# Windows Installation Instructions
 
-PREREQUISITES
-==============
-1. Libusb with isochronous support
-2. Libuvc
+## Prerequisites
+
+1. [Libusb with isochronous support] (http://github.com/pupil-labs/libusb)
+2. [Libuvc] (http://github.com/pupil-labs/libuvc)
 3. python 3 64-bit
 4. MSVS 2015
 5. numpy 
@@ -12,8 +11,8 @@ PREREQUISITES
 7. wheel (make sure pip version is latest)
 
 
-INSTALLATION
-=============
+## Installation
+
 1. Install turbojpeg VC 64 version: http://netassist.dl.sourceforge.net/project/libjpeg-turbo/1.5.1/libjpeg-turbo-1.5.1-vc64.exe
 Make sure <jpeg_install_dir>\bin directory is added to the system path
 2. Open setup.py and locate the code block branching from "elif platform.system() == 'Windows':". Edit the uvc_dir , tj_dir, and usb_dir 
