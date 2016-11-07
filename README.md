@@ -92,7 +92,8 @@ brew install libjpeg-turbo
 ```
 
 ### cython,numpy
-```pip install cython
+```
+pip install cython
 pip install numpy
 ```
 
