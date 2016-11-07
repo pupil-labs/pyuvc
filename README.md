@@ -92,8 +92,7 @@ brew install libjpeg-turbo
 ```
 
 ### cython,numpy
-```
-pip install cython
+```pip install cython
 pip install numpy
 ```
 
@@ -106,3 +105,8 @@ python setup.py build_ext -i
 ```
 python setup.py install
 ```
+
+##WINDOWS
+
+Please have a look at WINDOWS_USER.md for install instructions if you want to use PYUVC.
+Please have a look at WINDOWS_DEVELOER.md for install instructions if you want to modify PYUVC.
