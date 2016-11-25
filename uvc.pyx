@@ -42,6 +42,12 @@ uvc_error_codes = {  0:"Success (no error)",
                     -99:"Undefined error."}
 
 
+cdef unicode _to_unicode(object s):
+    if type(s) is unicode:
+        return <unicode>s
+    else:
+        return (<bytes>s).decode('utf-8')
+
 class CaptureError(Exception):
     def __init__(self, message):
         super(CaptureError, self).__init__()
@@ -333,9 +339,9 @@ cdef class Device_List(list):
                 idProduct,idVendor = desc.idProduct,desc.idVendor
                 device_address = uvc.uvc_get_device_address(dev)
                 bus_number = uvc.uvc_get_bus_number(dev)
-                devices.append({'name':product,
-                                'manufacturer':manufacturer,
-                                'serialNumber':serialNumber,
+                devices.append({'name':_to_unicode(product),
+                                'manufacturer':_to_unicode(manufacturer),
+                                'serialNumber':_to_unicode(serialNumber),
                                 'idProduct':idProduct,
                                 'idVendor':idVendor,
                                 'device_address':device_address,
@@ -348,12 +354,6 @@ cdef class Device_List(list):
         uvc.uvc_free_device_list(dev_list, 1)
 
         self[:] = devices
-
-    def __setitem__(self,index,value):
-        raise TypeError("This list does not support item assignment")
-
-    def __delitem__(self,index):
-        raise TypeError("This list does not support item deletion")
 
     cpdef cleanup(self):
         if self.ctx !=NULL:
@@ -392,9 +392,9 @@ def device_list():
             idProduct,idVendor = desc.idProduct,desc.idVendor
             device_address = uvc.uvc_get_device_address(dev)
             bus_number = uvc.uvc_get_bus_number(dev)
-            devices.append({'name':product,
-                            'manufacturer':manufacturer,
-                            'serialNumber':serialNumber,
+            devices.append({'name':_to_unicode(product),
+                            'manufacturer':_to_unicode(manufacturer),
+                            'serialNumber':_to_unicode(serialNumber),
                             'idProduct':idProduct,
                             'idVendor':idVendor,
                             'device_address':device_address,
@@ -486,9 +486,9 @@ cdef class Capture:
                             idProduct,idVendor = desc.idProduct,desc.idVendor
                             device_address = uvc.uvc_get_device_address(dev)
                             bus_number = uvc.uvc_get_bus_number(dev)
-                            self._info = {'name':product,
-                                            'manufacturer':manufacturer,
-                                            'serialNumber':serialNumber,
+                            self._info = {'name':_to_unicode(product),
+                                            'manufacturer':_to_unicode(manufacturer),
+                                            'serialNumber':_to_unicode(serialNumber),
                                             'idProduct':idProduct,
                                             'idVendor':idVendor,
                                             'device_address':device_address,
