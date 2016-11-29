@@ -41,9 +41,10 @@ def test_cap(i,mode=(640,480,30),format='bgr',bandwidth_factor=1.3):
 
 if __name__ == '__main__':
     forking_enable(0)
-    p0 = Process(target=test_cap,args=(0,(1280,720,30),'bgr'))
-    p1 = Process(target=test_cap,args=(1,(640,480,60),'gray'))
-    p2 = Process(target=test_cap,args=(2,(640,480,60),'gray'))
+    p0 = Process(target=test_cap,args=(0,(1280,720,60),'bgr'))
+    p1 = Process(target=test_cap,args=(1,(640,480,120),'gray'))
+    p2 = Process(target=test_cap,args=(2,(640,480,120),'gray'))
 
+    p0.start()
     p1.start()
     p2.start()
