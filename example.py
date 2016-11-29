@@ -1,44 +1,49 @@
 from __future__ import print_function
+
 import uvc
-import logging
-# import cv2
-from time import sleep
-logging.basicConfig(level=logging.DEBUG)
+import cv2
 from time import time,sleep
 
+from multiprocessing import Process,set_start_method,freeze_support
+def forking_enable(_):
+    set_start_method('spawn')
+
 import numpy as np
-
-
 dev_list =  uvc.device_list()
-print(dev_list)
-cap = uvc.Capture(dev_list[0]['uid'])
-for c in cap.controls:
-    print(getattr(c,'value'))
-    if 'Focus' in c.display_name:
-        c.value = 0
-print(cap.name)
-# print cap.avaible_modes
-print(cap)
-for x in range(500):
 
-    frame = cap.get_frame_robust()
-    cv2.imshow("img",frame.gray)
-    y,u,v = frame.yuv422
-    cv2.imshow("u",u)
-    cv2.imshow("v",v)
-    cv2.waitKey(1)
-#       # print frame.img.shape,x
-    # cap.frame_mode = (1280,720,30)
-#   for x in range(3):
-#       frame = cap.get_frame_robust()
-#       frame.img
-#       cv2.imshow("img",frame.gray)
-#       # cv2.imshow("u",u)
-#       # cv2.imshow("v",v)
-#       # sleep(.1)
-#       cv2.waitKey(1)
-#       # print frame.img.shape,x
+def test_cap(i,mode=(640,480,30),format='bgr',bandwidth_factor=1.3):
+    print("started cap: %s\n" %i)
+    cap = uvc.Capture(dev_list[i]['uid'])
+    # cap.print_info()
+    cap.bandwidth_factor = bandwidth_factor
+    cap.frame_mode = mode
 
-cap = None
-# exit()
+    title = cap.name + ' - ' + str(mode) + ' - ' + format
+    ts = time()
+    while True:
+        frame = cap.get_frame_robust()
+        print("%s - %s" %(title,time() - ts))
+        ts = time()
 
+        # uncomment below lines for opencv preview
+        if format == 'bgr':
+            data = frame.bgr
+        elif format == 'gray':
+            data = frame.gray
+
+        cv2.imshow(title,data)
+        k = cv2.waitKey(1)
+        if k == 27:
+            break
+
+    cap = None
+
+
+if __name__ == '__main__':
+    forking_enable(0)
+    p0 = Process(target=test_cap,args=(0,(1280,720,30),'bgr'))
+    p1 = Process(target=test_cap,args=(1,(640,480,60),'gray'))
+    p2 = Process(target=test_cap,args=(2,(640,480,60),'gray'))
+
+    p1.start()
+    p2.start()
