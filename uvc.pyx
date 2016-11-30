@@ -76,7 +76,7 @@ class DeviceNotFoundError(InitError):
 import logging
 logger = logging.getLogger(__name__)
 
-__version__ = '0.8' #make sure this is the same in setup.py
+__version__ = '0.9' #make sure this is the same in setup.py
 
 
 cdef class Frame:
