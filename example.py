@@ -4,9 +4,18 @@ import uvc
 # import cv2
 from time import time,sleep
 
-from multiprocessing import Process,set_start_method,freeze_support
-def forking_enable(_):
-    set_start_method('spawn')
+try:
+    from multiprocessing import Process,forking_enable,freeze_support
+except ImportError:
+    try:
+        # python3
+        from multiprocessing import Process,set_start_method,freeze_support
+        def forking_enable(_):
+            set_start_method('spawn')
+    except ImportError:
+        # python2 macos
+        from billiard import Process,forking_enable,freeze_support
+
 
 import numpy as np
 dev_list =  uvc.device_list()
@@ -41,6 +50,7 @@ def test_cap(i,mode=(640,480,30),format='bgr',bandwidth_factor=1.3):
 
 
 if __name__ == '__main__':
+    freeze_support()
     forking_enable(0)
     p0 = Process(target=test_cap,args=(0,(1280,720,60),'bgr'))
     p1 = Process(target=test_cap,args=(1,(640,480,120),'gray'))
