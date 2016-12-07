@@ -42,9 +42,9 @@ uvc_error_codes = {  0:"Success (no error)",
                     -99:"Undefined error."}
 
 
-cdef unicode _to_unicode(object s):
-    if type(s) is unicode:
-        return <unicode>s
+cdef str _to_str(object s):
+    if type(s) is str:
+        return <str>s
     else:
         return (<bytes>s).decode('utf-8')
 
@@ -339,9 +339,9 @@ cdef class Device_List(list):
                 idProduct,idVendor = desc.idProduct,desc.idVendor
                 device_address = uvc.uvc_get_device_address(dev)
                 bus_number = uvc.uvc_get_bus_number(dev)
-                devices.append({'name':_to_unicode(product),
-                                'manufacturer':_to_unicode(manufacturer),
-                                'serialNumber':_to_unicode(serialNumber),
+                devices.append({'name':_to_str(product),
+                                'manufacturer':_to_str(manufacturer),
+                                'serialNumber':_to_str(serialNumber),
                                 'idProduct':idProduct,
                                 'idVendor':idVendor,
                                 'device_address':device_address,
@@ -392,9 +392,9 @@ def device_list():
             idProduct,idVendor = desc.idProduct,desc.idVendor
             device_address = uvc.uvc_get_device_address(dev)
             bus_number = uvc.uvc_get_bus_number(dev)
-            devices.append({'name':_to_unicode(product),
-                            'manufacturer':_to_unicode(manufacturer),
-                            'serialNumber':_to_unicode(serialNumber),
+            devices.append({'name':_to_str(product),
+                            'manufacturer':_to_str(manufacturer),
+                            'serialNumber':_to_str(serialNumber),
                             'idProduct':idProduct,
                             'idVendor':idVendor,
                             'device_address':device_address,
@@ -486,9 +486,9 @@ cdef class Capture:
                             idProduct,idVendor = desc.idProduct,desc.idVendor
                             device_address = uvc.uvc_get_device_address(dev)
                             bus_number = uvc.uvc_get_bus_number(dev)
-                            self._info = {'name':_to_unicode(product),
-                                            'manufacturer':_to_unicode(manufacturer),
-                                            'serialNumber':_to_unicode(serialNumber),
+                            self._info = {'name':_to_str(product),
+                                            'manufacturer':_to_str(manufacturer),
+                                            'serialNumber':_to_str(serialNumber),
                                             'idProduct':idProduct,
                                             'idVendor':idVendor,
                                             'device_address':device_address,
@@ -584,9 +584,9 @@ cdef class Capture:
 
 
 
-    def get_frame(self):
+    def get_frame(self,timeout=0):
         cdef int status, j_width,j_height,jpegSubsamp,header_ok
-        cdef int  timeout_usec = 1000000 #1sec
+        cdef int  timeout_usec = int(timeout*1e6) #sec to usec
         if not self._stream_on:
             self._start()
         cdef uvc.uvc_frame *uvc_frame = NULL
