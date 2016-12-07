@@ -586,7 +586,7 @@ cdef class Capture:
 
     def get_frame(self):
         cdef int status, j_width,j_height,jpegSubsamp,header_ok
-        cdef int  timeout_usec = 1000000 #1sec
+        cdef int  timeout_usec = 0 #1000000 is OK for macOS and Linux but not Windows
         if not self._stream_on:
             self._start()
         cdef uvc.uvc_frame *uvc_frame = NULL
