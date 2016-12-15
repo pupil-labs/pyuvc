@@ -1,6 +1,6 @@
 cdef extern from "Windows.h":
-   unsigned int GetTickCount()
+   unsigned int timeGetTime()
 
 cdef double get_sys_time_monotonic():
 
-    return GetTickCount() * 1e-3
+    return timeGetTime() * 1e-3
