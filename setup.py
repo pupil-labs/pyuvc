@@ -54,7 +54,7 @@ elif platform.system() == 'Windows':
     pthr_dll = pthread_dir + '\\pthreadVC2.dll'
 
     extra_objects  = [tj_lib, uvc_lib]
-    libs = []
+    libs = ['winmm']
     extra_link_args = []
     include_dirs = [tj_dir + '\\include']
     include_dirs += [usb_dir] + [usb_dir + '\\libusb']
