@@ -39,10 +39,10 @@ elif platform.system() == 'Linux':
     extra_objects  = [tj_lib]
 elif platform.system() == 'Windows':
     pack_dir = ''
-    uvc_dir =  'D:\\work\\github\\mylibuvc'
-    tj_dir = 'D:\\work\\libjpeg-turbo-VC64'
-    usb_dir = 'D:\\work\\github\\mylibusb\\libusb'
-    pthread_dir = 'D:\\install\\pthreads-w32-2-9-1-release\\dll\\x64'
+    uvc_dir =  'C:\\work\\libuvc'
+    tj_dir = 'C:\\work\\libjpeg-turbo-VC64'
+    usb_dir = 'C:\\work\\libusb'
+    pthread_dir = 'C:\\work\\pthreads-w32-2-9-1-release\\Pre-built.2\\dll\\x64'
 
     tj_lib = tj_dir + '\\lib\\turbojpeg.lib'
     uvc_lib = uvc_dir + '\\bin\\Release\\uvc.lib'
