@@ -123,7 +123,6 @@ cdef class Frame:
             self._uvc_frame = uvc_frame
             self.owns_uvc_frame = False
 
-
     def __dealloc__(self):
         if self.owns_uvc_frame:
             uvc.uvc_free_frame(self._uvc_frame)
@@ -272,8 +271,7 @@ cdef class Frame:
         cdef int result
         cdef long unsigned int buf_size
         result = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>self._uvc_frame.data,
-                                        self._uvc_frame.data_bytes,
-                                        &j_width, &j_height, &jpegSubsamp)
+                                               self._uvc_frame.data_bytes, &j_width, &j_height, &jpegSubsamp)
 
         if result == -1:
             logger.error('Turbojpeg could not read jpeg header: %s'%turbojpeg.tjGetErrorStr() )
@@ -292,7 +290,6 @@ cdef class Frame:
             logger.warning('Turbojpeg jpeg2yuv: %s'%turbojpeg.tjGetErrorStr() )
         self.yuv_subsampling = jpegSubsamp
         self._yuv_converted = True
-
 
     def clear_caches(self):
         self._bgr_converted = False
