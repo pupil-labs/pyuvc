@@ -17,7 +17,7 @@ import glob
 extra_link_args = []
 plat_data_files = []
 extra_objects = []
-libs = ['uvc']
+libs = ['uvc.0.0.5']
 library_dirs = []
 if platform.system() == 'Darwin':
     try:
@@ -75,7 +75,7 @@ extensions = [Extension(name="uvc",
                         extra_compile_args=[])]
 
 setup(name="uvc",
-      version="0.9",  # make sure this is the same in uvc.pxy
+      version="0.91",  # make sure this is the same in uvc.pxy
       description="Usb Video Class Device bindings with format conversion tool.",
       ext_modules=cythonize(extensions),
       data_files=plat_data_files)
