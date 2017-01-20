@@ -19,7 +19,7 @@ libs = []
 extra_link_args = []
 plat_data_files = []
 extra_objects  = []
-libs = ['uvc']
+libs = ['uvc.0.0.5']
 if platform.system() == 'Darwin':
     try:
         tj_lib = glob.glob('/usr/local/opt/jpeg-turbo/lib/libturbojpeg.a')[0]
@@ -67,7 +67,7 @@ extensions = [
     Extension(  name="uvc",
                 sources=['uvc.pyx'],
                 include_dirs =  [numpy.get_include()]+include_dirs,
-		libraries = libs,
+		        libraries = libs,
                 extra_link_args=extra_link_args,
                 extra_objects = extra_objects,
                 extra_compile_args=[]
