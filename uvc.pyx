@@ -208,9 +208,9 @@ cdef class Frame:
             if self.yuv_subsampling == turbojpeg.TJSAMP_422:
                 uv_plane_len = y_plane_len//2
                 offset = y_plane_len
-                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width/2)
+                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width//2)
                 offset += uv_plane_len
-                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width/2)
+                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width//2)
             elif self.yuv_subsampling == turbojpeg.TJSAMP_420:
                 raise Exception("can not convert from YUV420 to YUV422")
             elif self.yuv_subsampling == turbojpeg.TJSAMP_444:
