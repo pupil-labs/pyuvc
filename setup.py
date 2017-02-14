@@ -24,7 +24,6 @@ if platform.system() == 'Darwin':
     except IndexError:
         raise Exception("Please install libturbojpeg")
     include_dirs = ['/usr/local/opt/jpeg-turbo/include/']
-    extra_objects = [tj_lib]
     libs = ['turbojpeg', 'uvc.0.0.5']
     library_dirs += ['/usr/local/opt/jpeg-turbo/lib/']
 elif platform.system() == 'Linux':
@@ -35,6 +34,7 @@ elif platform.system() == 'Linux':
         raise Exception("Please install libturbojpeg")
     libs = ['rt', 'uvc','turbojpeg']
     extra_link_args = []  # ['-Wl,-R/usr/local/lib/']
+    library_dirs += ['/opt/libjpeg-turbo/lib/']
     include_dirs = ['/opt/libjpeg-turbo/include']
 elif platform.system() == 'Windows':
     pack_dir = ''
