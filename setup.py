@@ -19,7 +19,6 @@ plat_data_files = []
 extra_objects = []
 library_dirs = []
 runtime_library_dirs = []
-
 if platform.system() == 'Darwin':
     libs = ['turbojpeg', 'uvc.0.0.5']
     include_dirs = ['/usr/local/opt/jpeg-turbo/include/']
@@ -28,7 +27,6 @@ elif platform.system() == 'Linux':
     libs = ['rt', 'uvc','turbojpeg']
     include_dirs = ['/opt/libjpeg-turbo/include']
     library_dirs += ['/opt/jpeg-turbo/lib64/']
-    runtime_library_dirs += ['/opt/jpeg-turbo/lib64/']
 elif platform.system() == 'Windows':
     pack_dir = ''
     uvc_dir = 'C:\\work\\libuvc'
@@ -60,7 +58,6 @@ extensions = [Extension(name="uvc",
                         sources=['uvc.pyx'],
                         include_dirs=[numpy.get_include()]+include_dirs,
                         library_dirs=library_dirs,
-                        runtime_library_dirs=runtime_library_dirs,
                         libraries=libs,
                         extra_link_args=extra_link_args,
                         extra_objects=extra_objects,
