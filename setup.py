@@ -33,10 +33,9 @@ elif platform.system() == 'Linux':
         tj_lib = glob.glob('/opt/libjpeg-turbo/lib*')[0]+'/libturbojpeg.a'
     except IndexError:
         raise Exception("Please install libturbojpeg")
-    libs = ['rt', 'uvc']
+    libs = ['rt', 'uvc','turbojpeg']
     extra_link_args = []  # ['-Wl,-R/usr/local/lib/']
     include_dirs = ['/opt/libjpeg-turbo/include']
-    extra_objects = [tj_lib]
 elif platform.system() == 'Windows':
     pack_dir = ''
     uvc_dir = 'C:\\work\\libuvc'
