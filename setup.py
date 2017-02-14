@@ -34,7 +34,7 @@ elif platform.system() == 'Linux':
         raise Exception("Please install libturbojpeg")
     libs = ['rt', 'uvc','turbojpeg']
     extra_link_args = []  # ['-Wl,-R/usr/local/lib/']
-    library_dirs += ['/opt/libjpeg-turbo/lib/']
+    library_dirs += ['/opt/libjpeg-turbo/lib64/']
     include_dirs = ['/opt/libjpeg-turbo/include']
 elif platform.system() == 'Windows':
     pack_dir = ''
