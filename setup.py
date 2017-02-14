@@ -19,22 +19,11 @@ plat_data_files = []
 extra_objects = []
 library_dirs = []
 if platform.system() == 'Darwin':
-    try:
-        tj_lib = glob.glob('/usr/local/opt/jpeg-turbo/lib/libturbojpeg.dylib')[0]
-    except IndexError:
-        raise Exception("Please install libturbojpeg")
-    include_dirs = ['/usr/local/opt/jpeg-turbo/include/']
     libs = ['turbojpeg', 'uvc.0.0.5']
+    include_dirs = ['/usr/local/opt/jpeg-turbo/include/']
     library_dirs += ['/usr/local/opt/jpeg-turbo/lib/']
 elif platform.system() == 'Linux':
-    try:
-        # check for tubo jpeg offical lib and select appropriate lib32/lib64 path.
-        tj_lib = glob.glob('/opt/libjpeg-turbo/lib*')[0]+'/libturbojpeg.a'
-    except IndexError:
-        raise Exception("Please install libturbojpeg")
     libs = ['rt', 'uvc','turbojpeg']
-    extra_link_args = []  # ['-Wl,-R/usr/local/lib/']
-    library_dirs += ['/opt/libjpeg-turbo/lib64/']
     include_dirs = ['/opt/libjpeg-turbo/include']
 elif platform.system() == 'Windows':
     pack_dir = ''
