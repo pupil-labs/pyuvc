@@ -18,7 +18,7 @@ extra_link_args = []
 plat_data_files = []
 extra_objects = []
 library_dirs = []
-include_dirs = numpy.get_include()
+include_dirs = [numpy.get_include()]
 if platform.system() == 'Darwin':
     libs = ['turbojpeg', 'uvc.0.0.5']
     include_dirs += ['/usr/local/opt/jpeg-turbo/include/']
