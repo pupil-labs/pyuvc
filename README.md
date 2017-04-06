@@ -37,9 +37,9 @@ for x in range(10):
 cap = None
 ```
 
-#Dependencies Linux
+# Dependencies Linux
 
-###libuvc
+### libuvc
 ```
 git clone https://github.com/pupil-labs/libuvc
 cd libuvc
@@ -65,15 +65,15 @@ sudo ldconfig
 sudo pip install cython
 ```
 
-###udev rules for running as normal user:
+### udev rules for running as normal user:
 ```
 echo 'SUBSYSTEM=="usb",  ENV{DEVTYPE}=="usb_device", GROUP="plugdev", MODE="0664"' | sudo tee /etc/udev/rules.d/10-libuvc.rules > /dev/null 
 sudo udevadm trigger
 ```
 
-#Dependencies Mac
+# Dependencies Mac
 
-###libuvc
+### libuvc
 ```
 git clone https://github.com/pupil-labs/libuvc
 cd libuvc
