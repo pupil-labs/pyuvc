@@ -1,6 +1,9 @@
-cdef extern from "Windows.h":
-   unsigned int timeGetTime()
 
-cdef double get_sys_time_monotonic():
+import time
+#on windows
 
-    return timeGetTime() * 1e-3
+epoch = time.monotonic()-time.perf_counter()
+
+def get_sys_time_monotonic():
+    return time.perf_counter()+epoch
+
