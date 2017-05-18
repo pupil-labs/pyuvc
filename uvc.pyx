@@ -16,15 +16,12 @@ cimport numpy as np
 import numpy as np
 from cuvc cimport uvc_frame_t
 
-#python3.6 have great monotonic support We use that now.
-# IF UNAME_SYSNAME == "Windows":
-#     include "windows_time.pxi"
-# ELIF UNAME_SYSNAME == "Darwin":
-#     include "darwin_time.pxi"
-# ELIF UNAME_SYSNAME == "Linux":
-#     include "linux_time.pxi"
-from time import monotonic
-
+IF UNAME_SYSNAME == "Windows":
+    include "windows_time.pxi"
+ELIF UNAME_SYSNAME == "Darwin":
+    include "darwin_time.pxi"
+ELIF UNAME_SYSNAME == "Linux":
+    include "linux_time.pxi"
 
 uvc_error_codes = {  0:"Success (no error)",
                     -1:"Input/output error.",
@@ -79,7 +76,7 @@ class DeviceNotFoundError(InitError):
 import logging
 logger = logging.getLogger(__name__)
 
-__version__ = '0.11' #make sure this is the same in setup.py
+__version__ = '0.10' #make sure this is the same in setup.py
 
 
 cdef class Frame:
@@ -793,7 +790,7 @@ cdef inline str uint_array_to_GuidCode(uvc.uint8_t * u):
     return '%s%s%s%s%s%s%s%s-%s%s%s%s-%s%s%s%s-%s%s%s%s-%s%s%s%s%s%s%s%s%s%s%s%s'%tuple(s)
 
 def get_time_monotonic():
-    return monotonic()
+    return get_sys_time_monotonic()
 
 def is_accessible(dev_uid):
     cdef uvc.uvc_context_t * ctx
