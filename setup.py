@@ -62,7 +62,7 @@ extensions = [Extension(name="uvc",
                         extra_compile_args=[])]
 
 setup(name="uvc",
-      version="0.10",  # make sure this is the same in uvc.pxy
+      version="0.11",  # make sure this is the same in uvc.pxy
       description="Usb Video Class Device bindings with format conversion tool.",
       ext_modules=cythonize(extensions),
       data_files=plat_data_files)
