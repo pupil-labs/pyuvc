@@ -1,7 +1,7 @@
 from __future__ import print_function
 
-import uvc
-# import cv2
+import uvc_yuv as uvc
+import cv2
 from time import time,sleep
 
 try:
@@ -50,12 +50,20 @@ def test_cap(i,mode=(640,480,30),format='bgr',bandwidth_factor=1.3):
 
 
 if __name__ == '__main__':
-    freeze_support()
-    forking_enable(0)
-    p0 = Process(target=test_cap,args=(0,(1280,720,60),'bgr'))
-    p1 = Process(target=test_cap,args=(1,(640,480,120),'gray'))
-    p2 = Process(target=test_cap,args=(2,(640,480,120),'gray'))
+    print(uvc.device_list())
+    cap = uvc.Capture(uvc.device_list()[0]['uid'])
+    cap.bandwidth_factor = 4
+    print(cap.frame_sizes)
 
-    p0.start()
-    p1.start()
-    p2.start()
+    cap.frame_size = cap.frame_sizes[0]
+    print(cap.frame_rates)
+    while True:
+        frame = cap.get_frame_robust()
+
+        # data = frame.img
+        # data.shape = (384,384,-1)
+        # data = data[:,:,0]
+        # print(data.shape)
+        data = frame.gray
+        cv2.imshow('df',data)
+        k = cv2.waitKey(1)

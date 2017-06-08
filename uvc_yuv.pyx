@@ -98,18 +98,14 @@ cdef class Frame:
     Previously converted formats are still valid.
     '''
 
-    cdef turbojpeg.tjhandle tj_context
     cdef uvc.uvc_frame * _uvc_frame
-    cdef unsigned char[:] _bgr_buffer, _gray_buffer,_yuv_buffer #we use numpy for memory management.
-    cdef bint _yuv_converted, _bgr_converted
+    cdef unsigned char[:] _yuv_buffer #we use numpy for memory management.
+    cdef bint _bgr_converted
     cdef public double timestamp
-    cdef public yuv_subsampling
     cdef bint owns_uvc_frame
 
     def __cinit__(self):
-        self._yuv_converted = False
-        self._bgr_converted = False
-        self.tj_context = NULL
+        pass
 
     def __init__(self):
         pass
@@ -122,6 +118,9 @@ cdef class Frame:
         else:
             self._uvc_frame = uvc_frame
             self.owns_uvc_frame = False
+
+        self._yuv_buffer = <unsigned char[:uvc_frame.data_bytes]>self._uvc_frame.data
+
 
     def __dealloc__(self):
         if self.owns_uvc_frame:
@@ -139,161 +138,17 @@ cdef class Frame:
         def __get__(self):
             return self._uvc_frame.sequence
 
-    property jpeg_buffer:
-        def __get__(self):
-            cdef np.uint8_t[::1] view = <np.uint8_t[:self._uvc_frame.data_bytes]>self._uvc_frame.data
-            return view
-
     property yuv_buffer:
         def __get__(self):
-            if self._yuv_converted is False:
-                self.jpeg2yuv()
             cdef np.uint8_t[::1] view = <np.uint8_t[:self._yuv_buffer.shape[0]]>&self._yuv_buffer[0]
             return view
-
-    property yuv420:
-        def __get__(self):
-            '''
-            planar YUV420 returned in 3 numpy arrays:
-            420 subsampling:
-                Y(height,width) U(height/2,width/2), V(height/2,width/2)
-            '''
-            if self._yuv_converted is False:
-                self.jpeg2yuv()
-
-            cdef np.ndarray[np.uint8_t, ndim=2] Y,U,V
-            y_plane_len = self.width*self.height
-            Y = np.asarray(self._yuv_buffer[:y_plane_len]).reshape(self.height,self.width)
-
-            if self.yuv_subsampling == turbojpeg.TJSAMP_422:
-                uv_plane_len = y_plane_len//2
-                offset = y_plane_len
-                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width/2)
-                offset += uv_plane_len
-                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width/2)
-                #hack solution to go from YUV422 to YUV420
-                U = U[::2,:]
-                V = V[::2,:]
-            elif self.yuv_subsampling == turbojpeg.TJSAMP_420:
-                uv_plane_len = y_plane_len//4
-                offset = y_plane_len
-                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height/2,self.width/2)
-                offset += uv_plane_len
-                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height/2,self.width/2)
-            elif self.yuv_subsampling == turbojpeg.TJSAMP_444:
-                uv_plane_len = y_plane_len
-                offset = y_plane_len
-                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width)
-                offset += uv_plane_len
-                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width)
-                #hack solution to go from YUV444 to YUV420
-                U = U[::2,::2]
-                V = V[::2,::2]
-            return Y,U,V
-
-    property yuv422:
-        def __get__(self):
-            '''
-            planar YUV420 returned in 3 numpy arrays:
-            422 subsampling:
-                Y(height,width) U(height,width/2), V(height,width/2)
-            '''
-            if self._yuv_converted is False:
-                self.jpeg2yuv()
-
-            cdef np.ndarray[np.uint8_t, ndim=2] Y,U,V
-            y_plane_len = self.width*self.height
-            Y = np.asarray(self._yuv_buffer[:y_plane_len]).reshape(self.height,self.width)
-
-            if self.yuv_subsampling == turbojpeg.TJSAMP_422:
-                uv_plane_len = y_plane_len//2
-                offset = y_plane_len
-                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width//2)
-                offset += uv_plane_len
-                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width//2)
-            elif self.yuv_subsampling == turbojpeg.TJSAMP_420:
-                raise Exception("can not convert from YUV420 to YUV422")
-            elif self.yuv_subsampling == turbojpeg.TJSAMP_444:
-                uv_plane_len = y_plane_len
-                offset = y_plane_len
-                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width)
-                offset += uv_plane_len
-                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width)
-                #hack solution to go from YUV444 to YUV420
-                U = U[:,::2]
-                V = V[:,::2]
-            return Y,U,V
-
 
     property gray:
         def __get__(self):
             # return gray aka luminace plane of YUV image.
-            if self._yuv_converted is False:
-                self.jpeg2yuv()
-            cdef np.ndarray[np.uint8_t, ndim=2] Y
-            Y = np.asarray(self._yuv_buffer[:self.width*self.height]).reshape(self.height,self.width)
-            return Y
-
-
-    property bgr:
-        def __get__(self):
-            if self._bgr_converted is False:
-                if self._yuv_converted is False:
-                    self.jpeg2yuv()
-                self.yuv2bgr()
-
-            cdef np.ndarray[np.uint8_t, ndim=3] BGR
-            BGR = np.asarray(self._bgr_buffer).reshape(self.height,self.width,3)
-            return BGR
-
-
-    #for legacy reasons.
-    property img:
-        def __get__(self):
-            return self.bgr
-
-    cdef yuv2bgr(self):
-        #2.75 ms at 1080p
-        cdef int channels = 3
-        cdef int result
-        self._bgr_buffer = np.empty(self.width*self.height*channels, dtype=np.uint8)
-        result = turbojpeg.tjDecodeYUV(self.tj_context, &self._yuv_buffer[0], 4, self.yuv_subsampling,
-                                        &self._bgr_buffer[0], self.width, 0, self.height, turbojpeg.TJPF_BGR, 0)
-        if result == -1:
-            logger.error('Turbojpeg yuv2bgr: %s'%turbojpeg.tjGetErrorStr() )
-        self._bgr_converted = True
-
-
-    cdef jpeg2yuv(self):
-        # 7.55 ms on 1080p
-        cdef int channels = 1
-        cdef int jpegSubsamp, j_width,j_height
-        cdef int result
-        cdef long unsigned int buf_size
-        result = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>self._uvc_frame.data,
-                                               self._uvc_frame.data_bytes, &j_width, &j_height, &jpegSubsamp)
-
-        if result == -1:
-            logger.error('Turbojpeg could not read jpeg header: %s'%turbojpeg.tjGetErrorStr() )
-            # hacky creation of dummy data, this will break if capture does work with different subsampling:
-            j_width, j_height, jpegSubsamp = self.width, self.height, turbojpeg.TJSAMP_422
-
-        buf_size = turbojpeg.tjBufSizeYUV(j_width, j_height, jpegSubsamp)
-        self._yuv_buffer = np.empty(buf_size, dtype=np.uint8)
-        if result !=-1:
-            result =  turbojpeg.tjDecompressToYUV(self.tj_context,
-                                             <unsigned char *>self._uvc_frame.data,
-                                             self._uvc_frame.data_bytes,
-                                             &self._yuv_buffer[0],
-                                              0)
-        if result == -1:
-            logger.warning('Turbojpeg jpeg2yuv: %s'%turbojpeg.tjGetErrorStr() )
-        self.yuv_subsampling = jpegSubsamp
-        self._yuv_converted = True
-
-    def clear_caches(self):
-        self._bgr_converted = False
-        self._yuv_converted = False
+            cdef np.ndarray[np.uint8_t, ndim=3] Y
+            Y = np.asarray(self._yuv_buffer[:self.width*self.height*2]).reshape(self.height,self.width,2)
+            return Y[:,:,0]
 
 
 
@@ -527,7 +382,7 @@ cdef class Capture:
             self._stop()
 
         status = uvc.uvc_get_stream_ctrl_format_size( self.devh, &self.ctrl,
-                                                      uvc.UVC_FRAME_FORMAT_COMPRESSED,
+                                                      uvc.UVC_FRAME_FORMAT_YUYV,
                                                       mode[0],mode[1],mode[2] )
         if status != uvc.UVC_SUCCESS:
             raise InitError("Can't get stream control: Error:'%s'."%uvc_error_codes[status])
@@ -595,13 +450,7 @@ cdef class Capture:
         if uvc_frame is NULL:
             raise StreamError("Frame pointer is NULL")
 
-        ##check jpeg header
-        header_ok = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>uvc_frame.data, uvc_frame.data_bytes, &j_width, &j_height, &jpegSubsamp)
-        if not (header_ok >=0 and uvc_frame.width == j_width and uvc_frame.height == j_height):
-            raise StreamError("JPEG header corrupt.")
-
         cdef Frame out_frame = Frame()
-        out_frame.tj_context = self.tj_context
         out_frame.attach_uvcframe(uvc_frame = uvc_frame,copy=True)
         return out_frame
 
@@ -661,7 +510,7 @@ cdef class Capture:
         while format_desc is not NULL:
             frame_desc = format_desc.frame_descs
             while frame_desc is not NULL:
-                if frame_desc.bDescriptorSubtype == uvc.UVC_VS_FRAME_MJPEG:
+                if frame_desc.bDescriptorSubtype == uvc.UVC_VS_FRAME_UNCOMPRESSED:
                     frame_index = frame_desc.bFrameIndex
                     width,height = frame_desc.wWidth,frame_desc.wHeight
                     mode = {'size':(width,height),'rates':[]}

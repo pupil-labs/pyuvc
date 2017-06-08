@@ -52,8 +52,8 @@ elif platform.system() == 'Windows':
                        (pack_dir, [jpg_dll]), (pack_dir, [pthr_dll])]
 
 
-extensions = [Extension(name="uvc",
-                        sources=['uvc.pyx'],
+extensions = [Extension(name="uvc_yuv",
+                        sources=['uvc_yuv.pyx'],
                         include_dirs=include_dirs,
                         library_dirs=library_dirs,
                         libraries=libs,
@@ -61,7 +61,7 @@ extensions = [Extension(name="uvc",
                         extra_objects=extra_objects,
                         extra_compile_args=[])]
 
-setup(name="uvc",
+setup(name="uvc_yuv",
       version="0.11",  # make sure this is the same in uvc.pxy
       description="Usb Video Class Device bindings with format conversion tool.",
       ext_modules=cythonize(extensions),
