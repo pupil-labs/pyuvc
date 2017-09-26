@@ -20,7 +20,7 @@ extra_objects = []
 library_dirs = []
 include_dirs = [numpy.get_include()]
 if platform.system() == 'Darwin':
-    libs = ['turbojpeg', 'uvc.0.0.5']
+    libs = ['turbojpeg', 'uvc.0.0.6']
     include_dirs += ['/usr/local/opt/jpeg-turbo/include/']
     library_dirs += ['/usr/local/opt/jpeg-turbo/lib/']
 elif platform.system() == 'Linux':
@@ -62,7 +62,7 @@ extensions = [Extension(name="uvc",
                         extra_compile_args=[])]
 
 setup(name="uvc",
-      version="0.11",  # make sure this is the same in uvc.pxy
+      version="0.12",  # make sure this is the same in uvc.pxy
       description="Usb Video Class Device bindings with format conversion tool.",
       ext_modules=cythonize(extensions),
       data_files=plat_data_files)
