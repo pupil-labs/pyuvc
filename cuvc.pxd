@@ -13,11 +13,11 @@ from libc.string cimport const_char
 
 IF UNAME_SYSNAME == "Windows":
     from posix.types cimport suseconds_t, time_t
-    cdef extern from "<time.h>":
+    cdef extern from "<winsock.h>":
         cdef struct timeval:
-            time_t      tv_sec
-            suseconds_t tv_usec
-
+            long      tv_sec
+            long      tv_usec
+    cdef extern from "<time.h>":
         cdef struct timespec:
             time_t tv_sec
             long tv_nsec

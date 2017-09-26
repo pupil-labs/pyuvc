@@ -14,7 +14,7 @@ cimport cuvc as uvc
 cimport cturbojpeg as turbojpeg
 cimport numpy as np
 import numpy as np
-from cuvc cimport uvc_frame_t
+from cuvc cimport uvc_frame_t, timeval
 
 IF UNAME_SYSNAME == "Windows":
     include "windows_time.pxi"
@@ -594,7 +594,6 @@ cdef class Capture:
             raise StreamError(uvc_error_codes[status])
         if uvc_frame is NULL:
             raise StreamError("Frame pointer is NULL")
-
         ##check jpeg header
         header_ok = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>uvc_frame.data, uvc_frame.data_bytes, &j_width, &j_height, &jpegSubsamp)
         if not (header_ok >=0 and uvc_frame.width == j_width and uvc_frame.height == j_height):
@@ -603,6 +602,7 @@ cdef class Capture:
         cdef Frame out_frame = Frame()
         out_frame.tj_context = self.tj_context
         out_frame.attach_uvcframe(uvc_frame = uvc_frame,copy=True)
+        out_frame.timestamp = uvc_frame.capture_time.tv_sec + <double>uvc_frame.capture_time.tv_usec * 1e-6
         return out_frame
 
 
