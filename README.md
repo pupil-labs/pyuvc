@@ -25,7 +25,6 @@ dev_list =  uvc.device_list()
 print dev_list
 cap = uvc.Capture(dev_list[0]['uid'])
 print cap.avaible_modes
-cap.print_info()
 for x in range(10):
 	print x
 	cap.frame_mode = (640,480,30)
@@ -109,3 +108,11 @@ python setup.py install
 
 Please have a look at WINDOWS_USER.md for install instructions if you want to use PYUVC.
 Please have a look at WINDOWS_DEVELOER.md for install instructions if you want to modify PYUVC.
+
+## Using IR Cameras
+```
+# add after opening a uvc.Capture()
+controls_dict = dict([(c.display_name, c) for c in cap.controls])
+controls_dict['Auto Exposure Mode'].value = 1
+controls_dict['Gamma'].value = 200
+```
