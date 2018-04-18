@@ -16,26 +16,7 @@ The `Frame` class has caching build in to avoid double decompression or conversi
 
 
 # Example
-```python
-from __future__ import print_function
-import uvc
-import logging
-logging.basicConfig(level=logging.INFO)
-
-dev_list =  uvc.device_list()
-print(dev_list)
-cap = uvc.Capture(dev_list[0]['uid'])
-print(cap.avaible_modes)
-for x in range(10):
-	print(x)
-	cap.frame_mode = (640,480,30)
-	for x in range(100):
-		frame = cap.get_frame_robust()
-		print(frame.img.shape)
-		#cv2.imshow("img",frame.gray)
-		#cv2.waitKey(1)
-cap = None
-```
+See `example.py` for an code example.
 
 # Dependencies Linux
 
@@ -67,7 +48,7 @@ sudo pip install cython
 
 ### udev rules for running as normal user:
 ```
-echo 'SUBSYSTEM=="usb",  ENV{DEVTYPE}=="usb_device", GROUP="plugdev", MODE="0664"' | sudo tee /etc/udev/rules.d/10-libuvc.rules > /dev/null 
+echo 'SUBSYSTEM=="usb",  ENV{DEVTYPE}=="usb_device", GROUP="plugdev", MODE="0664"' | sudo tee /etc/udev/rules.d/10-libuvc.rules > /dev/null
 sudo udevadm trigger
 ```
 
@@ -109,11 +90,3 @@ python setup.py install
 
 Please have a look at WINDOWS_USER.md for install instructions if you want to use PYUVC.
 Please have a look at WINDOWS_DEVELOER.md for install instructions if you want to modify PYUVC.
-
-## Using IR Cameras
-```
-# add after opening a uvc.Capture()
-controls_dict = dict([(c.display_name, c) for c in cap.controls])
-controls_dict['Auto Exposure Mode'].value = 1
-controls_dict['Gamma'].value = 200
-```
