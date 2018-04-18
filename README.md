@@ -17,20 +17,21 @@ The `Frame` class has caching build in to avoid double decompression or conversi
 
 # Example
 ```python
+from __future__ import print_function
 import uvc
 import logging
 logging.basicConfig(level=logging.INFO)
 
 dev_list =  uvc.device_list()
-print dev_list
+print(dev_list)
 cap = uvc.Capture(dev_list[0]['uid'])
-print cap.avaible_modes
+print(cap.avaible_modes)
 for x in range(10):
-	print x
+	print(x)
 	cap.frame_mode = (640,480,30)
 	for x in range(100):
 		frame = cap.get_frame_robust()
-		print frame.img.shape
+		print(frame.img.shape)
 		#cv2.imshow("img",frame.gray)
 		#cv2.waitKey(1)
 cap = None
