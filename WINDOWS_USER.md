@@ -9,7 +9,7 @@ PYUVC will only work with Python3.5+ 64bit!
 
 3. Plug in your web camera
 
-4. Start ZadiG. From options menu uncheck "hide composite devices", and check "display all devices"
+4. Start ZadiG. From options menu uncheck "Hide Composite Devices" or "Ignore Hubs or Composite Devices", and check "List All Devices"
 
 5. Locate your web camera composite device. It is crucial you select the composite parent and not one of the interfaces, otherwise libusb will not work
 
