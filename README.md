@@ -1,7 +1,7 @@
 pyuvc
 =======
 
-Python bindings for [libuvc](https://github.com/ktossell/libuvc) with super fast jpeg decompression using [libjpegturbo](http://libjpeg-turbo.virtualgl.org/) (utilizing the tubojpeg api).
+Python bindings for the Pupil Labs fork of [libuvc](https://github.com/pupil-labs/libuvc) with super fast jpeg decompression using [libjpegturbo](http://libjpeg-turbo.virtualgl.org/) (utilizing the tubojpeg api).
 
 * cross platform access to UVC capture devices.
 * Full access to all uvc settings (Zoom,Focus,Brightness,etc.)
