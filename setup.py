@@ -9,8 +9,8 @@
 """
 import platform
 import numpy
-from distutils.core import setup
-from distutils.extension import Extension
+
+from setuptools import setup, Extension
 from Cython.Build import cythonize
 import glob
 
@@ -74,6 +74,7 @@ setup(
     name="uvc",
     version="0.13",  # make sure this is the same in uvc.pxy
     description="Usb Video Class Device bindings with format conversion tool.",
+    install_requires=["numpy"],
     ext_modules=cythonize(extensions),
     data_files=plat_data_files,
 )
