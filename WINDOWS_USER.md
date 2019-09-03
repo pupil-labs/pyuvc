@@ -5,7 +5,7 @@ PYUVC will only work with Python3.5+ 64bit!
 
 1. Download and install [libusbk 3.0.7.0] (https://sourceforge.net/projects/libusbk/files/libusbK-release/3.0.7.0/libusbK-3.0.7.0-setup.exe/download)
 
-2. Download and install [Zadig] (http://zadig.akeo.ie/downloads/zadig_2.2.exe)
+2. Download and install [Zadig] (https://github.com/pbatard/libwdi/releases/download/v1.2.5/zadig-2.2.exe)
 
 3. Plug in your web camera
 
