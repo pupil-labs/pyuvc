@@ -17,6 +17,6 @@ PYUVC will only work with Python3.5+ 64bit!
 
 7. Verify in device manager it is correctly replaced. Should be listed under a new category libusbK USB Devices
 
-8. download the whell file from the releases page and do `pip install uvc-0.7.2-cp35-cp35m-win_amd64.whl`
+8. download the latest wheel file from: https://github.com/pupil-labs/pyuvc/releases and do `pip install --upgrade <name of latest wheel file here>`
 
 At this point the uvc extension should be able to locate and stream from your web camera.
