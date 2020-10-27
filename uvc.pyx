@@ -168,18 +168,18 @@ cdef class Frame:
             if self.yuv_subsampling == turbojpeg.TJSAMP_422:
                 uv_plane_len = y_plane_len//2
                 offset = y_plane_len
-                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width/2)
+                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width//2)
                 offset += uv_plane_len
-                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width/2)
+                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height,self.width//2)
                 #hack solution to go from YUV422 to YUV420
                 U = U[::2,:]
                 V = V[::2,:]
             elif self.yuv_subsampling == turbojpeg.TJSAMP_420:
                 uv_plane_len = y_plane_len//4
                 offset = y_plane_len
-                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height/2,self.width/2)
+                U = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height//2,self.width//2)
                 offset += uv_plane_len
-                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height/2,self.width/2)
+                V = np.asarray(self._yuv_buffer[offset:offset+uv_plane_len]).reshape(self.height//2,self.width//2)
             elif self.yuv_subsampling == turbojpeg.TJSAMP_444:
                 uv_plane_len = y_plane_len
                 offset = y_plane_len
