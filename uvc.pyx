@@ -15,6 +15,7 @@ cimport cturbojpeg as turbojpeg
 cimport numpy as np
 import numpy as np
 from cuvc cimport uvc_frame_t, timeval
+import warnings
 
 IF UNAME_SYSNAME == "Windows":
     include "windows_time.pxi"
@@ -746,6 +747,11 @@ cdef class Capture:
             self._configure_stream(mode)
 
     property avaible_modes:
+        def __get__(self):
+            warnings.warn("Please use 'available_modes' property", DeprecationWarning)
+            return self.available_modes
+
+    property available_modes:
         def __get__(self):
             modes = []
             for idx,m in enumerate(self._available_modes):
