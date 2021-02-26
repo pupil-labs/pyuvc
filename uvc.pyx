@@ -16,6 +16,7 @@ cimport numpy as np
 import numpy as np
 from cuvc cimport uvc_frame_t, timeval
 import warnings
+from uvc_version import __version__
 
 IF UNAME_SYSNAME == "Windows":
     include "windows_time.pxi"
@@ -76,8 +77,6 @@ class DeviceNotFoundError(InitError):
 #logging
 import logging
 logger = logging.getLogger(__name__)
-
-__version__ = '0.14' #make sure this is the same in setup.py
 
 
 cdef class Frame:

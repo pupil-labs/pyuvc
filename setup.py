@@ -69,10 +69,11 @@ extensions = [
         extra_compile_args=[],
     )
 ]
+from uvc_version import __version__
 
 setup(
     name="uvc",
-    version="0.14",  # make sure this is the same in uvc.pxy
+    version=__version__,
     description="Usb Video Class Device bindings with format conversion tool.",
     install_requires=["numpy"],
     ext_modules=cythonize(extensions),
