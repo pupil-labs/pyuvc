@@ -7,6 +7,7 @@
  License details are in the file license.txt, distributed as part of this software.
 ----------------------------------------------------------------------------------~(*)
 """
+import os
 import platform
 import numpy
 
@@ -14,15 +15,31 @@ from setuptools import setup, Extension
 from Cython.Build import cythonize
 import glob
 
+
+def macos_homebrew_prefix(package: str) -> str:
+    import subprocess
+
+    with subprocess.Popen(
+        ["brew", "--prefix", package], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    ) as proc:
+        out = proc.stdout.read()
+        err = proc.stderr.read()
+    if out:
+        return out.decode("utf-8").strip()
+    else:
+        raise ValueError(err.decode("utf-8").strip())
+
+
 extra_link_args = []
 plat_data_files = []
 extra_objects = []
 library_dirs = []
 include_dirs = [numpy.get_include()]
 if platform.system() == "Darwin":
+    jpeg_turbo_path = macos_homebrew_prefix("jpeg-turbo")
     libs = ["turbojpeg", "uvc.0.0.9"]
-    include_dirs += ["/usr/local/opt/jpeg-turbo/include/"]
-    library_dirs += ["/usr/local/opt/jpeg-turbo/lib/"]
+    include_dirs += [os.path.join(jpeg_turbo_path, "include")]
+    library_dirs += [os.path.join(jpeg_turbo_path, "lib")]
 elif platform.system() == "Linux":
     libs = ["rt", "uvc", "turbojpeg"]
 elif platform.system() == "Windows":
