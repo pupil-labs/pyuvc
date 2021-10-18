@@ -17,6 +17,8 @@ import numpy as np
 from cuvc cimport uvc_frame_t, timeval
 import warnings
 
+__version__ = "0.15.0"
+
 IF UNAME_SYSNAME == "Windows":
     include "windows_time.pxi"
 ELIF UNAME_SYSNAME == "Darwin":
