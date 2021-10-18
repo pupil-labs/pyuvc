@@ -7,13 +7,13 @@
  License details are in the file license.txt, distributed as part of this software.
 ----------------------------------------------------------------------------------~(*)
 """
+import glob
 import os
 import platform
-import numpy
 
-from setuptools import setup, Extension
+import numpy
 from Cython.Build import cythonize
-import glob
+from setuptools import Extension, setup
 
 
 def macos_homebrew_prefix(package: str) -> str:
