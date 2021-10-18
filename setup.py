@@ -12,23 +12,9 @@ import os
 import platform
 
 import numpy
+import pkgconfig
 from Cython.Build import cythonize
 from setuptools import Extension, setup
-
-
-def macos_homebrew_prefix(package: str) -> str:
-    import subprocess
-
-    with subprocess.Popen(
-        ["brew", "--prefix", package], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    ) as proc:
-        out = proc.stdout.read()
-        err = proc.stderr.read()
-    if out:
-        return out.decode("utf-8").strip()
-    else:
-        raise ValueError(err.decode("utf-8").strip())
-
 
 extra_link_args = []
 plat_data_files = []
@@ -36,10 +22,10 @@ extra_objects = []
 library_dirs = []
 include_dirs = [numpy.get_include()]
 if platform.system() == "Darwin":
-    jpeg_turbo_path = macos_homebrew_prefix("jpeg-turbo")
-    libs = ["turbojpeg", "uvc.0.0.9"]
-    include_dirs += [os.path.join(jpeg_turbo_path, "include")]
-    library_dirs += [os.path.join(jpeg_turbo_path, "lib")]
+    configs = pkgconfig.parse("libturbojpeg libuvc")
+    libs = configs["libraries"]
+    include_dirs += configs["include_dirs"]
+    library_dirs += configs["library_dirs"]
 elif platform.system() == "Linux":
     libs = ["rt", "uvc", "turbojpeg"]
 elif platform.system() == "Windows":

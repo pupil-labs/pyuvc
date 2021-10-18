@@ -23,6 +23,10 @@ IF UNAME_SYSNAME == "Windows":
             long tv_nsec
     cdef extern from "libusb/libusb.h":
         pass
+ELIF UNAME_SYSNAME == "Darwin":
+    from posix.time cimport timeval,timespec
+    cdef extern from "libusb.h":
+        pass
 ELSE:
     from posix.time cimport timeval,timespec
     cdef extern from "libusb-1.0/libusb.h":
