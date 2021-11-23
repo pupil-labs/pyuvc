@@ -75,7 +75,7 @@ extensions = [
 
 setup(
     name="uvc",
-    version="0.15.0",
+    version="0.16.0",
     description="Usb Video Class Device bindings with format conversion tool.",
     install_requires=["numpy"],
     ext_modules=cythonize(extensions),

@@ -16,6 +16,8 @@ cimport numpy as np
 import numpy as np
 from cuvc cimport uvc_frame_t, timeval
 import warnings
+import platform
+import logging
 
 __version__ = "0.15.0"
 
@@ -25,6 +27,40 @@ ELIF UNAME_SYSNAME == "Darwin":
     include "darwin_time.pxi"
 ELIF UNAME_SYSNAME == "Linux":
     include "linux_time.pxi"
+
+
+logger = logging.getLogger(__name__)
+
+# Until version 1.0.24, libusb did not support detaching kernel drivers on macOS. As a
+# result, the cameras could only be accessed if no other driver was attached. In macOS
+# Monterey, the OS attaches a driver by default. As a result, libusb needs to explicitly
+# detach the driver before claiming the device. This is only implemented in newer
+# versions of libusb and requires either root privileges or the
+# "com.apple.vm.device-access" entitlement. The latter requires a special provisioning
+# profile that is not publicly available. https://github.com/libusb/libusb/issues/1014
+
+# To avoid requiring root privileges on every macOS version, the code below checks if
+# it is running on macOS Big Sur or older and if so, disables the driver detachment
+# which corresponds to libusb 1.0.24 behavior, even if libusb 1.0.25 or newer is being
+# used.
+_mac_version = platform.mac_ver()[0]
+if _mac_version:
+    logger.debug(f"Running on macOS {_mac_version}")
+    IS_MACOS_BIG_SUR_OR_OLDER = int(_mac_version.split(".")[0]) <= 11
+    if IS_MACOS_BIG_SUR_OR_OLDER:
+        logger.debug(
+            "Running on macOS Big Sur or older. "
+            "Will not attempt to detach kernel drivers."
+        )
+    else:
+        logger.debug(
+            "Running on macOS Monterey or newer. "
+            "Requires root privileges to detach kernel drivers."
+        )
+else:
+    logger.debug(f"Not running on macOS. Will attempt to detach kernel drivers.")
+    IS_MACOS_BIG_SUR_OR_OLDER = False
+cdef int SHOULD_DETACH_KERNEL_DRIVER = int(not IS_MACOS_BIG_SUR_OR_OLDER)
 
 uvc_error_codes = {  0:"Success (no error)",
                     -1:"Input/output error.",
@@ -75,9 +111,6 @@ class DeviceNotFoundError(InitError):
     def __init__(self, message):
         super(InitError, self).__init__(message)
         self.message = message
-#logging
-import logging
-logger = logging.getLogger(__name__)
 
 __version__ = '0.14' #make sure this is the same in setup.py
 
@@ -505,7 +538,7 @@ cdef class Capture:
 
         #once found we open the device
         self.dev = dev
-        error = uvc.uvc_open(self.dev,&self.devh)
+        error = uvc.uvc_open(self.dev, &self.devh, SHOULD_DETACH_KERNEL_DRIVER)
         if error != uvc.UVC_SUCCESS:
             raise OpenError("could not open device. Error:%s"%uvc_error_codes[error])
         logger.debug("Device '%s' opended."%dev_uid)
@@ -529,9 +562,15 @@ cdef class Capture:
         if self._stream_on:
             self._stop()
 
-        status = uvc.uvc_get_stream_ctrl_format_size( self.devh, &self.ctrl,
-                                                      uvc.UVC_FRAME_FORMAT_COMPRESSED,
-                                                      mode[0],mode[1],mode[2] )
+        status = uvc.uvc_get_stream_ctrl_format_size(
+            self.devh,
+            &self.ctrl,
+            uvc.UVC_FRAME_FORMAT_COMPRESSED,
+            mode[0],
+            mode[1],
+            mode[2],
+            SHOULD_DETACH_KERNEL_DRIVER,
+        )
         if status != uvc.UVC_SUCCESS:
             raise InitError("Can't get stream control: Error:'%s'."%uvc_error_codes[status])
         self._configured = 1
@@ -542,7 +581,7 @@ cdef class Capture:
         cdef int status
         if not self._configured:
             self._configure_stream()
-        status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl)
+        status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl, SHOULD_DETACH_KERNEL_DRIVER)
         if status != uvc.UVC_SUCCESS:
             raise InitError("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
         status = uvc.uvc_stream_start(self.strmh, NULL, NULL,self._bandwidth_factor,0)
@@ -831,7 +870,7 @@ def is_accessible(dev_uid):
         raise ValueError("Device with uid: '%s' not found"%dev_uid)
 
     #once found we open the device
-    error = uvc.uvc_open(dev,&devh)
+    error = uvc.uvc_open(dev, &devh, SHOULD_DETACH_KERNEL_DRIVER)
     if error != uvc.UVC_SUCCESS:
         uvc.uvc_unref_device(dev)
         uvc.uvc_exit(ctx)
