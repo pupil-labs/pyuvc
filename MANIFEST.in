@@ -1,0 +1,1 @@
+recursive-include . *.pyx *.pxd *.pxi *.h *.c *.cpp
