@@ -43,10 +43,12 @@ logger = logging.getLogger(__name__)
 # it is running on macOS Big Sur or older and if so, disables the driver detachment
 # which corresponds to libusb 1.0.24 behavior, even if libusb 1.0.25 or newer is being
 # used.
-_mac_version = platform.mac_ver()[0]
-if _mac_version:
-    logger.debug(f"Running on macOS {_mac_version}")
-    IS_MACOS_BIG_SUR_OR_OLDER = int(_mac_version.split(".")[0]) <= 11
+_system_info = platform.uname()
+if _system_info.system == "Darwin":
+    logger.debug(f"Running on macOS (Kernel release {_system_info.release})")
+    # https://en.wikipedia.org/wiki/Darwin_(operating_system)#Release_history
+    # macOS Monterey uses Kernel version 21.*
+    IS_MACOS_BIG_SUR_OR_OLDER = int(_system_info.release.split(".")[0]) < 21
     if IS_MACOS_BIG_SUR_OR_OLDER:
         logger.debug(
             "Running on macOS Big Sur or older. "
