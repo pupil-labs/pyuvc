@@ -19,6 +19,11 @@ repos:
         args: ["--py36-plus"]
         exclude: ^bin/
 
+  - repo: https://github.com/pycqa/flake8
+    rev: 3.9.2
+    hooks:
+    - id: flake8
+
   - repo: https://github.com/PyCQA/isort
     rev: 5.10.1
     hooks:
