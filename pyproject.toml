@@ -7,9 +7,6 @@ skip-string-normalization = true
 
 [tool.setuptools_scm]
 
-[pytest.enabler.black]
-addopts = "--black"
-
 [pytest.enabler.mypy]
 addopts = "--mypy"
 
