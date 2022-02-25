@@ -1,6 +1,14 @@
 """Top-level entry-point for the <project_name> package"""
 
-# .version is generated on install via setuptools_scm, see pyproject.toml
-from .version import __version__, __version_info__
+try:
+    from importlib.metadata import PackageNotFoundError, version
+except ImportError:
+    from importlib_metadata import PackageNotFoundError, version
 
-__all__ = ["__version__", "__version_info__"]
+try:
+    __version__ = version("pupil_labs.project_name")
+except PackageNotFoundError:
+    # package is not installed
+    pass
+
+__all__ = ["__version__"]
