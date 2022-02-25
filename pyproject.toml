@@ -6,12 +6,6 @@ build-backend = "setuptools.build_meta"
 skip-string-normalization = true
 
 [tool.setuptools_scm]
-write_to = "src/pupil_labs/project_name/version.py"
-write_to_template = """
-\"\"\" Version information \"\"\"
-__version__ = "{version}"
-__version_info__ = {version_tuple}
-"""
 
 [pytest.enabler.black]
 addopts = "--black"
