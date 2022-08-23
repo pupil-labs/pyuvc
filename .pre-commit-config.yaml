@@ -22,7 +22,7 @@ repos:
   - repo: https://github.com/pycqa/flake8
     rev: 4.0.1
     hooks:
-    - id: flake8
+      - id: flake8
 
   - repo: https://github.com/PyCQA/isort
     rev: 5.10.1
@@ -31,7 +31,7 @@ repos:
         args: [--profile, black]
 
   - repo: https://github.com/psf/black
-    rev: 22.1.0
+    rev: 22.6.0
     hooks:
       - id: black
 
