@@ -1,0 +1,3 @@
+[submodule "libuvc-source"]
+	path = libuvc-source
+	url = git@github.com:pupil-labs/libuvc.git

@@ -652,10 +652,10 @@ cdef class Capture:
 
     cdef _enumerate_controls(self):
 
-        cdef uvc.uvc_input_terminal_t  *input_terminal = uvc.uvc_get_input_terminals(self.devh)
-        cdef uvc.uvc_output_terminal_t  *output_terminal = uvc.uvc_get_output_terminals(self.devh)
-        cdef uvc.uvc_processing_unit_t  *processing_unit = uvc.uvc_get_processing_units(self.devh)
-        cdef uvc.uvc_extension_unit_t  *extension_unit = uvc.uvc_get_extension_units(self.devh)
+        cdef uvc.uvc_input_terminal_t *input_terminal = <uvc.uvc_input_terminal_t *>uvc.uvc_get_input_terminals(self.devh)
+        cdef uvc.uvc_output_terminal_t *output_terminal = <uvc.uvc_output_terminal_t *>uvc.uvc_get_output_terminals(self.devh)
+        cdef uvc.uvc_processing_unit_t *processing_unit = <uvc.uvc_processing_unit_t *>uvc.uvc_get_processing_units(self.devh)
+        cdef uvc.uvc_extension_unit_t *extension_unit = <uvc.uvc_extension_unit_t *>uvc.uvc_get_extension_units(self.devh)
 
         cdef int x = 0
         avaible_controls_per_unit = {}
@@ -698,7 +698,7 @@ cdef class Capture:
 
 
     cdef _enumerate_formats(self):
-        cdef uvc.uvc_format_desc_t *format_desc = uvc.uvc_get_format_descs(self.devh)
+        cdef uvc.uvc_format_desc_t *format_desc = <uvc.uvc_format_desc_t *>uvc.uvc_get_format_descs(self.devh)
         cdef uvc.uvc_frame_desc *frame_desc
         cdef int i
         self._available_modes = []

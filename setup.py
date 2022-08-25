@@ -1,20 +1,10 @@
-"""
-(*)~----------------------------------------------------------------------------------
- Pupil - eye tracking platform
- Copyright (C) 2012-2015  Pupil Labs
-
- Distributed under the terms of the CC BY-NC-SA License.
- License details are in the file license.txt, distributed as part of this software.
-----------------------------------------------------------------------------------~(*)
-"""
-import glob
-import os
 import platform
 
 import numpy
 import pkgconfig
 from Cython.Build import cythonize
-from setuptools import Extension, setup
+from setuptools import Extension, find_packages
+from skbuild import setup
 
 extra_link_args = []
 plat_data_files = []
@@ -73,11 +63,14 @@ extensions = [
     )
 ]
 
+pyuvc_source_folder = "pyuvc-source"
+
 setup(
-    name="uvc",
-    version="0.16.0",
-    description="Usb Video Class Device bindings with format conversion tool.",
-    install_requires=["numpy"],
-    ext_modules=cythonize(extensions),
-    data_files=plat_data_files,
+    # ext_modules=cythonize(extensions),
+    # data_files=plat_data_files,
+    packages=find_packages(where=pyuvc_source_folder),
+    package_dir={"": pyuvc_source_folder},
+    include_package_data=False,
+    cmake_source_dir=pyuvc_source_folder,
+    cmake_install_dir=pyuvc_source_folder + "/uvc",
 )
