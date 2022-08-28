@@ -1,1 +1,1 @@
-from .uvc import *
+from .uvc_bindings import *

@@ -1,1 +1,8 @@
-recursive-include . *.pyx *.pxd *.pxi *.h *.c *.cpp
+recursive-include libuvc-source *.h *.c CMakeLists.txt Config.cmake.in
+recursive-include pyuvc-source *.h *.pyx CMakeLists.txt
+
+global-exclude *.dll *.so *.dylib
+
+global-exclude .DS_Store
+prune ./.*/
+prune **/__pycache__

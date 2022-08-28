@@ -1,5 +1,9 @@
-project(pyuvc)
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.24)
+project(pyuvc
+    LANGUAGES C
+    DESCRIPTION "Python bindings for the Pupil Labs libuvc library"
+    HOMEPAGE_URL "https://github.com/pupil-labs/pyuvc"
+)
 
 add_subdirectory(../libuvc-source skbuild-libuvc)
 
@@ -13,37 +17,30 @@ find_package(NumPy REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(libturbojpeg REQUIRED libturbojpeg)
 pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-pkg_check_modules(libuvc REQUIRED libuvc)
-
-# include cpp folder for finding headers
-include_directories(".")
-
-# include numpy headers
-include_directories(${NumPy_INCLUDE_DIRS})
-include_directories(${libuvc_INCLUDE_DIRS})
-include_directories(${libturbojpeg_INCLUDE_DIRS})
-include_directories(${LIBUSB_INCLUDE_DIRS})
-
-link_directories(${libuvc_LIBRARY_DIRS} ${libturbojpeg_LIBRARY_DIRS})
 
 # Note: add_cython_target does not actually add a target, but fills a variable with the
-# corresponding compiled source file, e.g. here 'pupil_detection_3d.cxx'. If only the
+# corresponding compiled source file, e.g. here 'uvc_bindings.c'. If only the
 # name is specified, it will look for a cython file with the same base name:
-# 'pupil_detection_3d.pyx' in this case.
-add_cython_target(uvc CXX PY3)
+# 'uvc_bindings.pyx' in this case.
+set(CYTHON_ANNOTATE TRUE)
+add_cython_target(uvc_bindings C PY3) # CXX does not generate a corretc module
 
 # Create a module library from the source file and wrap it with settings for
 # creating a python extension.
-add_library(uvc MODULE ${uvc})
-python_extension_module(uvc)
+add_library(uvc_bindings MODULE ${uvc_bindings})
+python_extension_module(uvc_bindings)
 
-# libuvc_LIBRARIES includes `uvc` which cannot be passed to `target_link_libraries`
-# as it will attempt to link to itself and fail. By prepending `-l`, we avoid the
-# ambiguity
-list(TRANSFORM libuvc_LIBRARIES PREPEND -l)
+# include cpp folder for finding headers
+target_include_directories(uvc_bindings PRIVATE ".")
 
-# link against external libraries
-target_link_libraries(uvc ${libuvc_LIBRARIES} ${libturbojpeg_LIBRARIES})
+# include numpy headers
+target_include_directories(uvc_bindings PRIVATE ${NumPy_INCLUDE_DIRS})
+target_include_directories(uvc_bindings PRIVATE ${libturbojpeg_INCLUDE_DIRS})
+target_include_directories(uvc_bindings PRIVATE ${LIBUSB_INCLUDE_DIRS})
+
+target_link_directories(uvc_bindings PRIVATE ${libturbojpeg_LIBRARY_DIRS})
+
+target_link_libraries(uvc_bindings PLLibUVC::uvc ${libturbojpeg_LIBRARIES})
 
 # install here
-install(TARGETS uvc LIBRARY DESTINATION ".")
+install(TARGETS uvc_bindings LIBRARY DESTINATION ".")
