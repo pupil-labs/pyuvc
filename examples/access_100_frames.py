@@ -14,12 +14,8 @@ cap = uvc.Capture(dev_list[0]["uid"])
 # controls_dict['Gamma'].value = 200
 
 print(cap.avaible_modes)
-for x in range(10):
-    print(x)
-    cap.frame_mode = (640, 480, 30)
-    for x in range(100):
-        frame = cap.get_frame_robust()
-        print(frame.img.shape)
-        # cv2.imshow("img",frame.gray)
-        # cv2.waitKey(1)
+cap.frame_mode = cap.avaible_modes[0]
+for x in range(100):
+    frame = cap.get_frame_robust()
+    print(frame.img.mean())
 cap = None
