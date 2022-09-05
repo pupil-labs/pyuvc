@@ -6,7 +6,12 @@ project(pyuvc
 )
 
 add_subdirectory(../libuvc-source skbuild-libuvc)
-set(CMAKE_INSTALL_RPATH @loader_path/${CMAKE_INSTALL_LIBDIR})
+
+if(APPLE)
+    set(CMAKE_INSTALL_RPATH @loader_path/${CMAKE_INSTALL_LIBDIR})
+elseif(UNIX)
+    set(CMAKE_INSTALL_RPATH $ORIGIN/${CMAKE_INSTALL_LIBDIR})
+endif()
 
 # find skbuild cmake packages
 find_package(PythonExtensions REQUIRED)
