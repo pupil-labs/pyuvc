@@ -63,23 +63,25 @@ else:
     IS_MACOS_BIG_SUR_OR_OLDER = False
 cdef int SHOULD_DETACH_KERNEL_DRIVER = int(not IS_MACOS_BIG_SUR_OR_OLDER)
 
-uvc_error_codes = {  0:"Success (no error)",
-                    -1:"Input/output error.",
-                    -2:"Invalid parameter.",
-                    -3:"Access denied.",
-                    -4:"No such device.",
-                    -5:"Entity not found.",
-                    -6:"Resource busy.",
-                    -7:"Operation timed out.",
-                    -8:"Overflow.",
-                    -9:"Pipe error.",
-                    -10:"System call interrupted.",
-                    -11:"Insufficient memory.     ",
-                    -12:"Operation not supported.",
-                    -50:"Device is not UVC-compliant.",
-                    -51:"Mode not supported.",
-                    -52:"Resource has a callback (can't use polling and async)",
-                    -99:"Undefined error."}
+uvc_error_codes = {  
+    0:"Success (no error)",
+    -1:"Input/output error",
+    -2:"Invalid parameter",
+    -3:"Access denied",
+    -4:"No such device",
+    -5:"Entity not found",
+    -6:"Resource busy",
+    -7:"Operation timed out",
+    -8:"Overflow",
+    -9:"Pipe error",
+    -10:"System call interrupted",
+    -11:"Insufficient memory",
+    -12:"Operation not supported",
+    -50:"Device is not UVC-compliant",
+    -51:"Mode not supported",
+    -52:"Resource has a callback (can't use polling and async)",
+    -99:"Undefined error",
+}
 
 
 cdef str _to_str(object s):
@@ -89,29 +91,20 @@ cdef str _to_str(object s):
         return (<bytes>s).decode('utf-8')
 
 class CaptureError(Exception):
-    def __init__(self, message):
-        super(CaptureError, self).__init__()
-        self.message = message
+    pass
 
 class StreamError(CaptureError):
-    def __init__(self, message):
-        super(StreamError, self).__init__(message)
-        self.message = message
+    pass
 
 class InitError(CaptureError):
-    def __init__(self, message):
-        super(InitError, self).__init__(message)
-        self.message = message
+    pass
 
 class OpenError(InitError):
-    def __init__(self, message):
-        super(InitError, self).__init__(message)
-        self.message = message
+    pass
 
 class DeviceNotFoundError(InitError):
     def __init__(self, message):
-        super(InitError, self).__init__(message)
-        self.message = message
+        super().__init__(message)
 
 __version__ = '0.14' #make sure this is the same in setup.py
 
@@ -510,38 +503,42 @@ cdef class Capture:
                 break
             device_address = uvc.uvc_get_device_address(dev)
             bus_number = uvc.uvc_get_bus_number(dev)
-            if dev_uid == '%s:%s'%(bus_number,device_address):
-                logger.debug("Found device that mached uid:'%s'"%dev_uid)
+            dev_uid_found = f'{bus_number}:{device_address}'
+            if dev_uid == dev_uid_found:
+                logger.debug(f"Found device that mached uid: {dev_uid}")
                 uvc.uvc_ref_device(dev)
                 if (uvc.uvc_get_device_descriptor(dev, &desc) == uvc.UVC_SUCCESS):
-                            product = desc.product or "unknown"
-                            manufacturer = desc.manufacturer or "unknown"
-                            serialNumber = desc.serialNumber or "unknown"
-                            idProduct,idVendor = desc.idProduct,desc.idVendor
-                            device_address = uvc.uvc_get_device_address(dev)
-                            bus_number = uvc.uvc_get_bus_number(dev)
-                            self._info = {'name':_to_str(product),
-                                            'manufacturer':_to_str(manufacturer),
-                                            'serialNumber':_to_str(serialNumber),
-                                            'idProduct':idProduct,
-                                            'idVendor':idVendor,
-                                            'device_address':device_address,
-                                            'bus_number':bus_number,
-                                            'uid':'%s:%s'%(bus_number,device_address)}
+                    product = desc.product or "unknown"
+                    manufacturer = desc.manufacturer or "unknown"
+                    serialNumber = desc.serialNumber or "unknown"
+                    idProduct,idVendor = desc.idProduct,desc.idVendor
+                    device_address = uvc.uvc_get_device_address(dev)
+                    bus_number = uvc.uvc_get_bus_number(dev)
+                    self._info = {
+                        'name': _to_str(product),
+                        'manufacturer': _to_str(manufacturer),
+                        'serialNumber': _to_str(serialNumber),
+                        'idProduct': idProduct,
+                        'idVendor': idVendor,
+                        'device_address': device_address,
+                        'bus_number': bus_number,
+                        'uid': dev_uid_found,
+                    }
+                    logger.debug(f"Device info: {self._info}")
                 uvc.uvc_free_device_descriptor(desc)
                 break
             idx +=1
 
         uvc.uvc_free_device_list(dev_list, 1)
         if dev == NULL:
-            raise DeviceNotFoundError("Device with uid: '%s' not found"%dev_uid)
+            raise DeviceNotFoundError(f"Device with uid: `{dev_uid}` not found")
 
 
         #once found we open the device
         self.dev = dev
         error = uvc.uvc_open(self.dev, &self.devh, SHOULD_DETACH_KERNEL_DRIVER)
         if error != uvc.UVC_SUCCESS:
-            raise OpenError("could not open device. Error:%s"%uvc_error_codes[error])
+            raise OpenError(f"Could not open device. Error: {uvc_error_codes[error]}")
         logger.debug("Device '%s' opended."%dev_uid)
 
     cdef _de_init_device(self):
