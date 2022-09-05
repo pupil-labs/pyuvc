@@ -28,8 +28,7 @@ ELIF UNAME_SYSNAME == "Darwin":
 ELIF UNAME_SYSNAME == "Linux":
     include "linux_time.pxi"
 
-
-logger = logging.getLogger(__name__)
+from . import logger
 
 # Until version 1.0.24, libusb did not support detaching kernel drivers on macOS. As a
 # result, the cameras could only be accessed if no other driver was attached. In macOS
