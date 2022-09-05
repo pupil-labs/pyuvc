@@ -623,8 +623,6 @@ cdef class Capture:
                 return frame
         raise StreamError("Could not grab frame after 3 attempts. Giving up.")
 
-
-
     def get_frame(self,timeout=0):
         cdef int status, j_width,j_height,jpegSubsamp,header_ok
         cdef int  timeout_usec = int(timeout*1e6) #sec to usec
