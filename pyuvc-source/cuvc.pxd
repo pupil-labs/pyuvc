@@ -186,18 +186,14 @@ cdef extern from  "libuvc/libuvc.h":
         uvc_vs_desc_subtype bDescriptorSubtype
         uint8_t bFormatIndex
         uint8_t bNumFrameDescriptors
-        #union {
-        #uint8_t guidFormat[16]
-        #uint8_t fourccFormat[4]
-        #}
-        #/** Format-specific data */
-        #union {
-        #/** BPP for uncompressed stream */
-        #uint8_t bBitsPerPixel
-        #/** Flags for JPEG stream */
-        #uint8_t bmFlags
-        #}
-        #/** Default {uvc_frame_desc} to choose given this format */
+        uint8_t guidFormat[16]
+        uint8_t fourccFormat[4]
+        # /** Format-specific data */
+        # /** BPP for uncompressed stream */
+        uint8_t bBitsPerPixel
+        # /** Flags for JPEG stream */
+        uint8_t bmFlags
+        # /** Default {uvc_frame_desc} to choose given this format */
         uint8_t bDefaultFrameIndex
         uint8_t bAspectRatioX
         uint8_t bAspectRatioY
