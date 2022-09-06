@@ -1,23 +1,17 @@
-'''
-(*)~----------------------------------------------------------------------------------
- Pupil - eye tracking platform
- Copyright (C) 2012-2015  Pupil Labs
-
- Distributed under the terms of the CC BY-NC-SA License.
- License details are in the file LICENSE, distributed as part of this software.
-----------------------------------------------------------------------------------~(*)
-'''
-
 import cython
+import logging
+import platform
+import warnings
+from itertools import chain
 from libc.string cimport memset
-cimport cuvc as uvc
-cimport cturbojpeg as turbojpeg
+from typing import NamedTuple, Optional, Tuple
+
 cimport numpy as np
 import numpy as np
+
+cimport cuvc as uvc
+cimport cturbojpeg as turbojpeg
 from cuvc cimport uvc_frame_t, timeval
-import warnings
-import platform
-import logging
 
 __version__ = "0.15.0"
 
@@ -106,7 +100,20 @@ class DeviceNotFoundError(InitError):
     def __init__(self, message):
         super().__init__(message)
 
-__version__ = '0.14' #make sure this is the same in setup.py
+
+CameraMode = NamedTuple(
+    "CameraMode",
+    [
+        ("width", int),
+        ("height", int),
+        ("fps", int),
+        ("format_native", int),
+        ("format_name", str),
+        ("supported", bool)
+    ],
+)
+
+_supported_formats = (uvc.UVC_FRAME_FORMAT_GRAY8, uvc.UVC_FRAME_FORMAT_MJPEG)
 
 
 cdef class Frame:
@@ -456,8 +463,8 @@ cdef class Capture:
     cdef uvc.uvc_stream_handle_t *strmh
     cdef float _bandwidth_factor
 
-    cdef tuple _active_mode
-    cdef list _available_modes
+    cdef object _active_mode
+    cdef list _camera_modes
     cdef dict _info
     cdef public list controls
 
@@ -468,8 +475,8 @@ cdef class Capture:
         self._stream_on = 0
         self._configured = 0
         self.strmh = NULL
-        self._available_modes = []
-        self._active_mode = None,None,None
+        self._camera_modes = []
+        self._active_mode = None
         self._info = {}
         self.controls = []
         self._bandwidth_factor = 2.0
@@ -554,26 +561,37 @@ cdef class Capture:
         self._re_init_device()
         self._start()
 
-    cdef _configure_stream(self,mode=(640,480,30)):
-        cdef int status
+    cdef _configure_stream(self, mode: Optional[CameraMode] = None):
+        if mode is None:
+            if self.available_modes:
+                mode = self.available_modes[0]
+            else:
+                raise InitError(
+                    f"Error: No supported mode found. Unsupported modes: "
+                    f"{self.all_modes}"
+                )
 
         if self._stream_on:
             self._stop()
 
+        cdef int status
+        cdef uvc.uvc_frame_format fmt = uvc.UVC_FRAME_FORMAT_ANY
         status = uvc.uvc_get_stream_ctrl_format_size(
             self.devh,
             &self.ctrl,
-            uvc.UVC_FRAME_FORMAT_COMPRESSED,
-            mode[0],
-            mode[1],
-            mode[2],
+            mode.format_native,
+            mode.width,
+            mode.height,
+            mode.fps,
             SHOULD_DETACH_KERNEL_DRIVER,
         )
         if status != uvc.UVC_SUCCESS:
-            raise InitError("Can't get stream control: Error:'%s'."%uvc_error_codes[status])
+            raise InitError(f"Error: Can't get stream control: {uvc_error_codes[status]} (requested {fmt})")
+        else:
+            logger.debug(f"Negotiated frame format: {self.ctrl}")
+
         self._configured = 1
         self._active_mode = mode
-
 
     cdef _start(self):
         cdef int status
@@ -587,7 +605,6 @@ cdef class Capture:
             raise InitError("Can't start isochronous stream: Error:'%s'."%uvc_error_codes[status])
         self._stream_on = 1
         logger.debug("Stream start.")
-
 
     def stop_stream(self):
         self._stop()
@@ -695,19 +712,31 @@ cdef class Capture:
         cdef uvc.uvc_format_desc_t *format_desc = <uvc.uvc_format_desc_t *>uvc.uvc_get_format_descs(self.devh)
         cdef uvc.uvc_frame_desc *frame_desc
         cdef int i
-        self._available_modes = []
+        self._camera_modes = []
+        cdef uvc.uvc_frame_format format_native
+        cdef str format_name
+
         while format_desc is not NULL:
             frame_desc = format_desc.frame_descs
+            
+            format_native = uvc.uvc_frame_format_for_guid(format_desc.guidFormat)
+            format_name = (<char*>format_desc.fourccFormat).decode('UTF-8')
+            is_format_supported = (format_native in _supported_formats)
             while frame_desc is not NULL:
-                if frame_desc.bDescriptorSubtype == uvc.UVC_VS_FRAME_MJPEG:
-                    frame_index = frame_desc.bFrameIndex
-                    width,height = frame_desc.wWidth,frame_desc.wHeight
-                    mode = {'size':(width,height),'rates':[]}
-                    i = 0
-                    while frame_desc.intervals[i]:
-                        mode['rates'].append(interval_to_fps(frame_desc.intervals[i]) )
-                        i+=1
-                    self._available_modes.append(mode)
+                i = 0
+                while frame_desc.intervals[i]:
+                    fps = interval_to_fps(frame_desc.intervals[i])
+                    self._camera_modes.append(
+                        CameraMode(
+                            width=frame_desc.wWidth,
+                            height=frame_desc.wHeight,
+                            fps=fps,
+                            format_native=format_native,
+                            format_name=format_name,
+                            supported=is_format_supported,
+                        )
+                    )
+                    i+=1
 
                 #go to next frame_desc
                 frame_desc = frame_desc.next
@@ -715,10 +744,11 @@ cdef class Capture:
             #go to next format_desc
             format_desc = format_desc.next
 
-        logger.debug('avaible video modes: %s'%self._available_modes)
+        logger.debug(f'{self} - all camera modes: {self._camera_modes}')
 
     def __str__(self):
-        return "Capture device \n\t" + "\n\t".join(('%s: %s'%(k,v) for k,v in self._info.iteritems()))
+        meta = " ".join((f'{k}={v!r}' for k,v in self._info.iteritems()))
+        return f"Capture({meta})"
 
 
     def close(self):
@@ -736,24 +766,25 @@ cdef class Capture:
         self.close()
 
 
-    property frame_size:
-        def __get__(self):
-            return self._active_mode[:2]
-        def __set__(self,size):
-            for m in self._available_modes:
-                if size == m['size']:
-                    if self.frame_rate is not None:
-                        #closest match for rate
-                        rates = [ abs(r-self.frame_rate) for r in m['rates'] ]
-                        best_rate_idx = rates.index(min(rates))
-                        rate = m['rates'][best_rate_idx]
-                    else:
-                        #fist one
-                        rate = m['rates'][0]
-                    mode = size + (rate,)
-                    self._configure_stream(mode)
-                    return
-            raise ValueError("Frame size not suported.")
+    @property
+    def frame_size(self) -> Tuple[int, int]:
+        return (self._active_mode.width, self._active_mode.height)
+
+    @frame_size.setter
+    def frame_size(self, size: Tuple[int, int]):
+        for m in self._camera_modes:
+            if size == (m.width, m.height):
+                if self.frame_rate is not None:
+                    #closest match for rate
+                    rates = [ abs(r-self.frame_rate) for r in m['rates'] ]
+                    best_rate_idx = rates.index(min(rates))
+                    rate = m['rates'][best_rate_idx]
+                else:
+                    rate = m['rates'][0]
+                mode = size + (rate,)
+                self._configure_stream(mode)
+                return
+        raise ValueError("Frame size not suported.")
 
     property frame_rate:
         def __get__(self):
@@ -766,35 +797,32 @@ cdef class Capture:
 
     property frame_sizes:
         def __get__(self):
-            return [m['size'] for m in self._available_modes]
+            return [m['size'] for m in self._camera_modes]
 
     property frame_rates:
         def __get__(self):
-            for m in self._available_modes:
+            for m in self._camera_modes:
                 if m['size'] == self.frame_size:
                     return m['rates']
             raise ValueError("Please set frame_size before asking for rates.")
 
 
-    property frame_mode:
-        def __get__(self):
-            return self._active_mode
-        def __set__(self,mode):
-            logger.debug('Setting mode: %s,%s,%s'%mode)
-            self._configure_stream(mode)
+    @property
+    def frame_mode(self) -> CameraMode:
+        return self._active_mode
 
-    property avaible_modes:
-        def __get__(self):
-            warnings.warn("Please use 'available_modes' property", DeprecationWarning)
-            return self.available_modes
+    @frame_mode.setter
+    def frame_mode(self, mode: CameraMode):
+        logger.debug(f"Setting mode: {mode}")
+        self._configure_stream(mode)
 
-    property available_modes:
-        def __get__(self):
-            modes = []
-            for idx,m in enumerate(self._available_modes):
-                for r in m['rates']:
-                    modes.append(m['size']+(r,))
-            return modes
+    @property
+    def available_modes(self) -> Tuple[CameraMode,...]:
+        return tuple(mode for mode in self._camera_modes if mode.supported)
+
+    @property
+    def all_modes(self) -> Tuple[CameraMode,...]:
+        return tuple(self._camera_modes)
 
     property name:
         def __get__(self):
