@@ -361,7 +361,23 @@ cdef extern from  "libuvc/libuvc.h":
 
 
     cdef struct uvc_stream_ctrl:
-        pass
+        uint16_t bmHint
+        uint8_t bFormatIndex
+        uint8_t bFrameIndex
+        uint32_t dwFrameInterval
+        uint16_t wKeyFrameRate
+        uint16_t wPFrameRate
+        uint16_t wCompQuality
+        uint16_t wCompWindowSize
+        uint16_t wDelay
+        uint32_t dwMaxVideoFrameSize
+        uint32_t dwMaxPayloadTransferSize
+        uint32_t dwClockFrequency
+        uint8_t bmFramingInfo
+        uint8_t bPreferredVersion
+        uint8_t bMinVersion
+        uint8_t bMaxVersion
+        uint8_t bInterfaceNumber
     ctypedef uvc_stream_ctrl uvc_stream_ctrl_t
 
 
