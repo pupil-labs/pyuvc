@@ -417,6 +417,7 @@ cdef extern from  "libuvc/libuvc.h":
     const uvc_extension_unit_t *uvc_get_extension_units(uvc_device_handle_t *devh)
 
 
+    uvc_frame_format uvc_frame_format_for_guid(uint8_t guid[16])
     uvc_error_t uvc_get_stream_ctrl_format_size( uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_format format, int width, int height, int fps, int should_detach_kernel_driver)
 
     uvc_format_desc_t *uvc_get_format_descs(uvc_device_handle_t* )
