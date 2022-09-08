@@ -74,7 +74,7 @@ def init_camera_from_list(devices, camera: CameraSpec) -> Optional[uvc.Capture]:
 
 
 if __name__ == "__main__":
-    os.environ["LIBUSB_DEBUG"] = "2"
+    os.environ["LIBUSB_DEBUG"] = "3"
     install_rich_traceback()
     logging.basicConfig(
         level=logging.NOTSET,
@@ -85,16 +85,23 @@ if __name__ == "__main__":
     # logging.getLogger("uvc").setLevel("INFO")
     main(
         [
-            CameraSpec("Redacted1", width=384, height=192, fps=200),
+            CameraSpec(
             # CameraSpec(
-            #     "Redacted1",
-            #     #     width=1280,
-            #     #     height=720,
-            #     width=1600,
-            #     height=1200,
-            #     fps=30,
+                width=384,
+                height=192,
+                fps=200,
+                bandwidth_factor=0,
+            ),
+            CameraSpec(
             #     # bandwidth_factor=0.5,
-            #     bandwidth_factor=1.08,
-            # ),
+                #     width=1280,
+                #     height=720,
+                width=1600,
+                height=1200,
+                fps=30,
+                # bandwidth_factor=0,
+                # bandwidth_factor=1.08,
+                bandwidth_factor=1.6,
+            ),
         ]
     )
