@@ -117,39 +117,10 @@ _supported_formats = (uvc.UVC_FRAME_FORMAT_GRAY8, uvc.UVC_FRAME_FORMAT_MJPEG)
 
 
 cdef class Frame:
-    '''
-    The Frame Object holds image data and image metadata.
-
-    The Frame object is returned from Capture.get_frame()
-
-    It will hold the data in the transport format the Capture is configured to grab.
-    Usually this is mjpeg or yuyv
-
-    Other formats can be requested and will be converted/decoded on the fly.
-    Frame will use caching to avoid redunant work.
-    Usually RGB8,YUYV or GRAY are requested formats.
-
-    WARNING:
-    When capture.get_frame() is called again previos instances of Frame will point to invalid memory.
-    Specifically all image data in the capture transport format.
-    Previously converted formats are still valid.
-    '''
-
-    cdef turbojpeg.tjhandle tj_context
     cdef uvc.uvc_frame * _uvc_frame
-    cdef unsigned char[:] _bgr_buffer, _gray_buffer,_yuv_buffer #we use numpy for memory management.
-    cdef bint _yuv_converted, _bgr_converted
-    cdef public double timestamp
-    cdef public yuv_subsampling
     cdef bint owns_uvc_frame
-
-    def __cinit__(self):
-        self._yuv_converted = False
-        self._bgr_converted = False
-        self.tj_context = NULL
-
-    def __init__(self):
-        pass
+   
+    cdef public double timestamp
 
     cdef attach_uvcframe(self,uvc.uvc_frame *uvc_frame,copy=True):
         if copy:
@@ -175,6 +146,56 @@ cdef class Frame:
     property index:
         def __get__(self):
             return self._uvc_frame.sequence
+
+    property gray:
+        def __get__(self):
+            cdef np.uint8_t[::1] view
+            if self._uvc_frame.width * self._uvc_frame.height > self._uvc_frame.data_bytes:
+                logger.debug(
+                    f"Received less data than expected ({self._uvc_frame.data_bytes} / "
+                    f"{self._uvc_frame.width * self._uvc_frame.height})"
+                )
+                # less data transferred than expected, filling with zeros
+                view = <np.uint8_t[:self._uvc_frame.data_bytes]>self._uvc_frame.data
+                frame = 255 + np.zeros((self._uvc_frame.height * self._uvc_frame.width), dtype=np.uint8)
+                frame[:self._uvc_frame.data_bytes] = view
+            else:            
+                view = <np.uint8_t[:self._uvc_frame.height*self._uvc_frame.width]>self._uvc_frame.data
+                frame = np.asarray(view)
+            return frame.reshape((self._uvc_frame.height, self._uvc_frame.width))
+
+
+cdef class MJPEGFrame(Frame):
+    '''
+    The Frame Object holds image data and image metadata.
+
+    The Frame object is returned from Capture.get_frame()
+
+    It will hold the data in the transport format the Capture is configured to grab.
+    Usually this is mjpeg or yuyv
+
+    Other formats can be requested and will be converted/decoded on the fly.
+    Frame will use caching to avoid redunant work.
+    Usually RGB8,YUYV or GRAY are requested formats.
+
+    WARNING:
+    When capture.get_frame() is called again previos instances of Frame will point to invalid memory.
+    Specifically all image data in the capture transport format.
+    Previously converted formats are still valid.
+    '''
+
+    cdef turbojpeg.tjhandle tj_context
+    cdef unsigned char[:] _bgr_buffer, _gray_buffer,_yuv_buffer #we use numpy for memory management.
+    cdef bint _yuv_converted, _bgr_converted
+    cdef public yuv_subsampling
+
+    def __cinit__(self):
+        self._yuv_converted = False
+        self._bgr_converted = False
+        self.tj_context = NULL
+
+    def __init__(self):
+        pass
 
     property jpeg_buffer:
         def __get__(self):
@@ -575,7 +596,6 @@ cdef class Capture:
             self._stop()
 
         cdef int status
-        cdef uvc.uvc_frame_format fmt = uvc.UVC_FRAME_FORMAT_ANY
         status = uvc.uvc_get_stream_ctrl_format_size(
             self.devh,
             &self.ctrl,
@@ -586,7 +606,10 @@ cdef class Capture:
             SHOULD_DETACH_KERNEL_DRIVER,
         )
         if status != uvc.UVC_SUCCESS:
-            raise InitError(f"Error: Can't get stream control: {uvc_error_codes[status]} (requested {fmt})")
+            raise InitError(
+                f"Error: Can't get stream control: {uvc_error_codes[status]} "
+                f"(requested {mode.format_native})"
+            )
         else:
             logger.debug(f"Negotiated frame format: {self.ctrl}")
 
@@ -600,7 +623,7 @@ cdef class Capture:
         status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl, SHOULD_DETACH_KERNEL_DRIVER)
         if status != uvc.UVC_SUCCESS:
             raise InitError("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
-        status = uvc.uvc_stream_start(self.strmh, NULL, NULL,self._bandwidth_factor,0)
+        status = uvc.uvc_stream_start(self.strmh, NULL, NULL, self._bandwidth_factor, 0)
         if status != uvc.UVC_SUCCESS:
             raise InitError("Can't start isochronous stream: Error:'%s'."%uvc_error_codes[status])
         self._stream_on = 1
@@ -628,37 +651,70 @@ cdef class Capture:
             try:
                 frame = self.get_frame()
             except StreamError as e:
-                if a:
-                    logger.info('Could not get Frame: "%s". Attempt:%s/%s '%(e.message,a+1,attempts))
-                else:
-                    logger.debug('Could not get Frame of first try: "%s". Attempt:%s/%s '%(e.message,a+1,attempts))
+                logger.debug(
+                    f"Could not get Frame of first try: '{e}'. Attempt: "
+                    f"{a+1}/{attempts}"
+                )
             else:
                 return frame
         raise StreamError("Could not grab frame after 3 attempts. Giving up.")
 
     def get_frame(self,timeout=0):
-        cdef int status, j_width,j_height,jpegSubsamp,header_ok
+        cdef int status, j_width, j_height, jpegSubsamp, header_ok
         cdef int  timeout_usec = int(timeout*1e6) #sec to usec
         if not self._stream_on:
             self._start()
         cdef uvc.uvc_frame *uvc_frame = NULL
         #when this is called we will overwrite the last jpeg buffer! This can be dangerous!
         with nogil:
-            status = uvc.uvc_stream_get_frame(self.strmh,&uvc_frame,timeout_usec)
-        if status !=uvc.UVC_SUCCESS:
+            status = uvc.uvc_stream_get_frame(self.strmh, &uvc_frame, timeout_usec)
+        if status == uvc.UVC_ERROR_TIMEOUT:
+            raise TimeoutError
+        elif status != uvc.UVC_SUCCESS:
             raise StreamError(uvc_error_codes[status])
         if uvc_frame is NULL:
             raise StreamError("Frame pointer is NULL")
-        ##check jpeg header
-        header_ok = turbojpeg.tjDecompressHeader2(self.tj_context,  <unsigned char *>uvc_frame.data, uvc_frame.data_bytes, &j_width, &j_height, &jpegSubsamp)
-        if not (header_ok >=0 and uvc_frame.width == j_width and uvc_frame.height == j_height):
-            raise StreamError("JPEG header corrupt.")
+        
+        cdef Frame out_frame_gray
+        cdef MJPEGFrame out_frame_mjpeg
+        cdef object frame
 
-        cdef Frame out_frame = Frame()
-        out_frame.tj_context = self.tj_context
-        out_frame.attach_uvcframe(uvc_frame = uvc_frame,copy=True)
-        out_frame.timestamp = uvc_frame.capture_time.tv_sec + <double>uvc_frame.capture_time.tv_usec * 1e-6
-        return out_frame
+        if uvc_frame.frame_format == uvc.UVC_COLOR_FORMAT_MJPEG:
+            ##check jpeg header
+            header_ok = turbojpeg.tjDecompressHeader2(
+                self.tj_context,
+                <unsigned char *>uvc_frame.data,
+                uvc_frame.data_bytes,
+                &j_width,
+                &j_height,
+                &jpegSubsamp
+            )
+            if not (
+                header_ok >= 0 and
+                uvc_frame.width == j_width and
+                uvc_frame.height == j_height
+            ):
+                raise StreamError("JPEG header corrupt.")
+            out_frame_mjpeg = MJPEGFrame()
+            out_frame_mjpeg.tj_context = self.tj_context
+            out_frame_mjpeg.attach_uvcframe(uvc_frame=uvc_frame, copy=True)
+            frame = out_frame_mjpeg
+
+        elif uvc_frame.frame_format == uvc.UVC_COLOR_FORMAT_GRAY8:
+            # if uvc_frame.width * uvc_frame.height > uvc_frame.data_bytes:
+            #     raise StreamError(
+            #         f"Received too few bytes to fill {uvc_frame.width}x"
+            #         f"{uvc_frame.height} GRAY8 image"
+            #     )
+            out_frame_gray = Frame()
+            out_frame_gray.attach_uvcframe(uvc_frame=uvc_frame, copy=True)
+            frame = out_frame_gray
+
+        else:
+            raise NotImplementedError(f"Unsupported frame format {uvc_frame.frame_format}")
+
+        frame.timestamp = uvc_frame.capture_time.tv_sec + <double>uvc_frame.capture_time.tv_usec * 1e-6
+        return frame
 
 
     cdef _enumerate_controls(self):
