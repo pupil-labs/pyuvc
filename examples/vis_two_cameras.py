@@ -20,7 +20,10 @@ def main(camera_specs: Iterable[CameraSpec]):
     devices = uvc.device_list()
     cameras = {spec: init_camera_from_list(devices, spec) for spec in camera_specs}
     if not all(cameras.values()):
-        raise RuntimeError("Could not initialize all specified cameras")
+        raise RuntimeError(
+            "Could not initialize all specified cameras. Available: "
+            f"{[dev['name'] for dev in devices]}"
+        )
 
     try:
         keep_running = True
