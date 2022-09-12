@@ -824,32 +824,45 @@ cdef class Capture:
 
     @property
     def frame_size(self) -> Tuple[int, int]:
-        return (self._active_mode.width, self._active_mode.height)
+        if self._active_mode:
+            return (self._active_mode.width, self._active_mode.height)
 
     @frame_size.setter
     def frame_size(self, size: Tuple[int, int]):
-        for m in self._camera_modes:
-            if size == (m.width, m.height):
+        for mode in self.available_modes:
+            if size == (mode.width, mode.height):
                 if self.frame_rate is not None:
                     #closest match for rate
-                    rates = [ abs(r-self.frame_rate) for r in m['rates'] ]
+                    rates = [abs(m.fps-self.frame_rate) for m in self.available_modes]
                     best_rate_idx = rates.index(min(rates))
-                    rate = m['rates'][best_rate_idx]
-                else:
-                    rate = m['rates'][0]
-                mode = size + (rate,)
+                    mode = self.available_modes[best_rate_idx]
                 self._configure_stream(mode)
                 return
         raise ValueError("Frame size not suported.")
 
     property frame_rate:
         def __get__(self):
-            return self._active_mode[2]
-        def __set__(self,val):
-            if  self._configured:
-                self.frame_mode = self._active_mode[:2]+(val,)
+            if self._active_mode:
+                return self._active_mode.fps
+
+        def __set__(self, val):
+            if self._active_mode and self._active_mode.fps == val:
+                return
+            elif self._active_mode:
+                for mode in self.available_modes:
+                    if (
+                        mode.width == self._active_mode.width and
+                        mode.height == self._active_mode.height and
+                        mode.fps == val
+                    ):
+                        self.frame_mode = mode
+                        return
+                raise ValueError(
+                    f"No available mode with target frame rate {val} Hz found: "
+                    f"{self.available_modes}"
+                )
             else:
-                raise ValueError('set frame size first.')
+                logger.warning("Could not set frame rate. Set frame size first.")
 
     property frame_sizes:
         def __get__(self):
