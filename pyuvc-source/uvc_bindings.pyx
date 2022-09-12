@@ -755,7 +755,11 @@ cdef class Capture:
                 try:
                     control= Control(cap = self,**std_ctl)
                 except Exception as e:
-                    logger.error("Could not init '%s'! Error: %s" %(std_ctl['display_name'],e))
+                    import traceback
+
+                    logger.debug(f"Could not init {std_ctl['display_name']} control!")
+                    logger.debug(f"Control info: {std_ctl}")
+                    logger.debug(traceback.format_exc())
                 else:
                     self.controls.append(control)
 
