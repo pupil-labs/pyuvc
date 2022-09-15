@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
 archs = ["native"]
-skip = "{cp,pp}27-* {cp,pp}35-* pp*"
+skip = "{cp,pp}27-* {cp,pp}35-* pp* *win*"
 
 build-frontend = "build"
 
