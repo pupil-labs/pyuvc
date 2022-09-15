@@ -9,7 +9,7 @@ on:
 
 jobs:
   build_wheels:
-    name: "Build apriltag wheels on ${{ matrix.os }}"
+    name: "Build pyuvc wheels on ${{ matrix.os }}"
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
