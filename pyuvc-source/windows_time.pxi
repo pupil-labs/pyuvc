@@ -1,7 +1,10 @@
 
 import time
+
 #on windows
-from libc.stdint cimport uint64_t, int64_t
+
+from libc.stdint cimport int64_t, uint64_t
+
 
 cdef extern from "Windows.h":
     int QueryPerformanceCounter(int64_t *)
@@ -15,7 +18,7 @@ cdef double get_sys_time_monotonic():
     QueryPerformanceCounter(&ts)
     QueryPerformanceFrequency(&freq)
     t_us = (ts * 1000000 )  / freq
-    
+
     fullsecs = t_us / 1000000
     us_left = t_us - fullsecs*1000000
 

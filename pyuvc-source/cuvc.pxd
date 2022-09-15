@@ -24,11 +24,11 @@ IF UNAME_SYSNAME == "Windows":
     cdef extern from "libusb/libusb.h":
         pass
 ELIF UNAME_SYSNAME == "Darwin":
-    from posix.time cimport timeval,timespec
+    from posix.time cimport timespec, timeval
     cdef extern from "libusb.h":
         pass
 ELSE:
-    from posix.time cimport timeval,timespec
+    from posix.time cimport timespec, timeval
     cdef extern from "libusb-1.0/libusb.h":
         pass
 
@@ -463,5 +463,3 @@ cdef inline void INT_TO_DW(int32_t i, uint8_t *p):
     p[1] = i >> 8
     p[2] = i >> 16
     p[3] = i >> 24
-
-
