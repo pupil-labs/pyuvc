@@ -164,6 +164,19 @@ cdef class Frame:
                 frame = np.asarray(view)
             return frame.reshape((self._uvc_frame.height, self._uvc_frame.width))
 
+    @property
+    def bgr(self):
+        return np.stack([self.gray] * 3, axis=2)
+
+    @property
+    def yuv_buffer(self):
+        return None
+
+    #for legacy reasons.
+    @property
+    def img(self):
+        return self.bgr
+
 
 cdef class MJPEGFrame(Frame):
     '''
@@ -304,11 +317,6 @@ cdef class MJPEGFrame(Frame):
             BGR = np.asarray(self._bgr_buffer).reshape(self.height,self.width,3)
             return BGR
 
-
-    #for legacy reasons.
-    property img:
-        def __get__(self):
-            return self.bgr
 
     cdef yuv2bgr(self):
         #2.75 ms at 1080p
@@ -899,7 +907,6 @@ cdef class Capture:
     @property
     def all_modes(self) -> Tuple[CameraMode,...]:
         return tuple(self._camera_modes)
-
     property name:
         def __get__(self):
             return self._info['name']
