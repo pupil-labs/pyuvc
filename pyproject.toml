@@ -32,3 +32,16 @@ before-build = "pip install delvewheel pupil-pthreads-win"
 repair-wheel-command = [
     'bash scripts/repair-wheels-windows.sh {dest_dir} {wheel}',
 ]
+
+[tool.cibuildwheel.linux]
+before-all = [
+    "yum install -y libudev-devel",
+    "{project}/scripts/build-deps-manylinux.sh",
+]
+
+[[tool.cibuildwheel.overrides]]
+select = "*-musllinux*"
+before-all = [
+    "apk add eudev-dev nasm",
+    "{project}/scripts/build-deps-manylinux.sh",
+]
