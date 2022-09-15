@@ -870,14 +870,17 @@ cdef class Capture:
 
     property frame_sizes:
         def __get__(self):
-            return [m['size'] for m in self._camera_modes]
+            return [(m.width, m.height) for m in self._camera_modes]
 
     property frame_rates:
         def __get__(self):
-            for m in self._camera_modes:
-                if m['size'] == self.frame_size:
-                    return m['rates']
-            raise ValueError("Please set frame_size before asking for rates.")
+            frame_rates = [
+                m.fps for m in self._camera_modes
+                if (m.width, m.height) == self.frame_size
+            ]
+            if not frame_rates:
+                raise ValueError("Please set frame_size before asking for rates.")
+            return frame_rates
 
 
     @property
