@@ -1,17 +1,21 @@
-import cython
 import logging
 import platform
 import warnings
 from itertools import chain
+
+import cython
+
 from libc.string cimport memset
+
 from typing import NamedTuple, Optional, Tuple
 
 cimport numpy as np
+
 import numpy as np
 
-cimport cuvc as uvc
 cimport cturbojpeg as turbojpeg
-from cuvc cimport uvc_frame_t, timeval
+cimport cuvc as uvc
+from cuvc cimport timeval, uvc_frame_t
 
 __version__ = "0.15.0"
 
@@ -57,7 +61,7 @@ else:
     IS_MACOS_BIG_SUR_OR_OLDER = False
 cdef int SHOULD_DETACH_KERNEL_DRIVER = int(not IS_MACOS_BIG_SUR_OR_OLDER)
 
-uvc_error_codes = {  
+uvc_error_codes = {
     0:"Success (no error)",
     -1:"Input/output error",
     -2:"Invalid parameter",
@@ -119,7 +123,7 @@ _supported_formats = (uvc.UVC_FRAME_FORMAT_GRAY8, uvc.UVC_FRAME_FORMAT_MJPEG)
 cdef class Frame:
     cdef uvc.uvc_frame * _uvc_frame
     cdef bint owns_uvc_frame
-   
+
     cdef public double timestamp
 
     cdef attach_uvcframe(self,uvc.uvc_frame *uvc_frame,copy=True):
@@ -159,10 +163,23 @@ cdef class Frame:
                 view = <np.uint8_t[:self._uvc_frame.data_bytes]>self._uvc_frame.data
                 frame = 255 + np.zeros((self._uvc_frame.height * self._uvc_frame.width), dtype=np.uint8)
                 frame[:self._uvc_frame.data_bytes] = view
-            else:            
+            else:
                 view = <np.uint8_t[:self._uvc_frame.height*self._uvc_frame.width]>self._uvc_frame.data
                 frame = np.asarray(view)
             return frame.reshape((self._uvc_frame.height, self._uvc_frame.width))
+
+    @property
+    def bgr(self):
+        return np.stack([self.gray] * 3, axis=2)
+
+    @property
+    def yuv_buffer(self):
+        return None
+
+    #for legacy reasons.
+    @property
+    def img(self):
+        return self.bgr
 
 
 cdef class MJPEGFrame(Frame):
@@ -304,11 +321,6 @@ cdef class MJPEGFrame(Frame):
             BGR = np.asarray(self._bgr_buffer).reshape(self.height,self.width,3)
             return BGR
 
-
-    #for legacy reasons.
-    property img:
-        def __get__(self):
-            return self.bgr
 
     cdef yuv2bgr(self):
         #2.75 ms at 1080p
@@ -674,7 +686,7 @@ cdef class Capture:
             raise StreamError(uvc_error_codes[status])
         if uvc_frame is NULL:
             raise StreamError("Frame pointer is NULL")
-        
+
         cdef Frame out_frame_gray
         cdef MJPEGFrame out_frame_mjpeg
         cdef object frame
@@ -778,7 +790,7 @@ cdef class Capture:
 
         while format_desc is not NULL:
             frame_desc = format_desc.frame_descs
-            
+
             format_native = uvc.uvc_frame_format_for_guid(format_desc.guidFormat)
             format_name = (<char*>format_desc.fourccFormat).decode('UTF-8')
             is_format_supported = (format_native in _supported_formats)
@@ -870,14 +882,17 @@ cdef class Capture:
 
     property frame_sizes:
         def __get__(self):
-            return [m['size'] for m in self._camera_modes]
+            return [(m.width, m.height) for m in self._camera_modes]
 
     property frame_rates:
         def __get__(self):
-            for m in self._camera_modes:
-                if m['size'] == self.frame_size:
-                    return m['rates']
-            raise ValueError("Please set frame_size before asking for rates.")
+            frame_rates = [
+                m.fps for m in self._camera_modes
+                if (m.width, m.height) == self.frame_size
+            ]
+            if not frame_rates:
+                raise ValueError("Please set frame_size before asking for rates.")
+            return frame_rates
 
 
     @property
@@ -896,7 +911,6 @@ cdef class Capture:
     @property
     def all_modes(self) -> Tuple[CameraMode,...]:
         return tuple(self._camera_modes)
-
     property name:
         def __get__(self):
             return self._info['name']
@@ -977,5 +991,3 @@ def is_accessible(dev_uid):
         uvc.uvc_unref_device(dev)
         uvc.uvc_exit(ctx)
         return True
-
-

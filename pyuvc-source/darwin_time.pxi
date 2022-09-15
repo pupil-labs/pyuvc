@@ -21,6 +21,3 @@ cdef double get_sys_time_monotonic():
         get_mach_timebase_info(&timeBase)
         timeConvert = <double>timeBase.numer /<double>timeBase.denom / 1000000000.0
     return mach_absolute_time( ) * timeConvert
-
-
-
