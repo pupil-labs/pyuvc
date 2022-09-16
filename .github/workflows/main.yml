@@ -13,8 +13,11 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
+        CIBW_BUILD: ["*"]
+        exclude:
+          - os: ubuntu-latest
+            CIBW_BUILD: "*"
         include:
-          - CIBW_BUILD: "*"  # default: build everything
           - os: ubuntu-latest
             CIBW_BUILD: "*manylinux*"
           - os: ubuntu-latest
