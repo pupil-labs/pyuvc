@@ -15,6 +15,9 @@ if(NOT ${libuvc_FOUND})
     elseif(UNIX)
         set(CMAKE_INSTALL_RPATH $ORIGIN/${CMAKE_INSTALL_LIBDIR})
     endif()
+else()
+    message(STATUS "Setting RPATH to ${libuvc_LIBRARY_DIRS}")
+    set(CMAKE_INSTALL_RPATH ${libuvc_LIBRARY_DIRS})
 endif()
 
 # find skbuild cmake packages
