@@ -13,14 +13,22 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
+        include:
+          - CIBW_BUILD: "*"  # default: build everything
+          - os: ubuntu-latest
+            CIBW_BUILD: "*manylinux*"
+          - os: ubuntu-latest
+            CIBW_BUILD: "*musllinux*"
     continue-on-error: true
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Build wheels
+      - name: Build ${{ matrix.CIBW_BUILD }} wheels on ${{ matrix.os }}
         uses: pypa/cibuildwheel@v2.9.0
+        env:
+          CIBW_BUILD: ${{ matrix.CIBW_BUILD }}
 
       - uses: actions/upload-artifact@v2
         if: always()
