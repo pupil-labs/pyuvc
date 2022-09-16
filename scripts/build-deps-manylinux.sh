@@ -19,3 +19,5 @@ make -j
 make install
 popd
 popd
+
+$(dirname "$0")/build-deps-unix.sh

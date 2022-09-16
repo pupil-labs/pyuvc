@@ -5,12 +5,16 @@ project(pyuvc
     HOMEPAGE_URL "https://github.com/pupil-labs/pyuvc"
 )
 
-add_subdirectory(../libuvc-source skbuild-libuvc)
+find_package(libuvc QUIET)
 
-if(APPLE)
-    set(CMAKE_INSTALL_RPATH @loader_path/${CMAKE_INSTALL_LIBDIR})
-elseif(UNIX)
-    set(CMAKE_INSTALL_RPATH $ORIGIN/${CMAKE_INSTALL_LIBDIR})
+if(NOT ${libuvc_FOUND})
+    add_subdirectory(../libuvc-source skbuild-libuvc)
+
+    if(APPLE)
+        set(CMAKE_INSTALL_RPATH @loader_path/${CMAKE_INSTALL_LIBDIR})
+    elseif(UNIX)
+        set(CMAKE_INSTALL_RPATH $ORIGIN/${CMAKE_INSTALL_LIBDIR})
+    endif()
 endif()
 
 # find skbuild cmake packages
