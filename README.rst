@@ -6,7 +6,7 @@
 
 .. _PyPI link: https://pypi.org/project/pupil-labs-uvc
 
-.. image:: https://github.com/jaraco/pupil-labs/pyuvc/tests/badge.svg
+.. image:: https://github.com/pupil-labs/pupil-labs/pyuvc/tests/badge.svg
    :target: https://github.com/pupil-labs/pyuvc/actions?query=workflow%3A%22tests%22
    :alt: tests
 
