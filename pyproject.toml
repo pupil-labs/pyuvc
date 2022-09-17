@@ -33,6 +33,9 @@ repair-wheel-command = [
     'bash scripts/repair-wheels-windows.sh {dest_dir} {wheel}',
 ]
 
+[tool.cibuildwheel.macos]
+before-all = ["{project}/scripts/build-deps-unix.sh"]
+
 [tool.cibuildwheel.linux]
 before-all = [
     "yum install -y libudev-devel",

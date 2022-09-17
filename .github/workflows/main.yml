@@ -9,18 +9,29 @@ on:
 
 jobs:
   build_wheels:
-    name: "Build pyuvc wheels on ${{ matrix.os }}"
+    name: "Build ${{ matrix.CIBW_BUILD }} wheels on ${{ matrix.os }}"
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
+        CIBW_BUILD: ["*"]
+        exclude:
+          - os: ubuntu-latest
+            CIBW_BUILD: "*"
+        include:
+          - os: ubuntu-latest
+            CIBW_BUILD: "*manylinux*"
+          - os: ubuntu-latest
+            CIBW_BUILD: "*musllinux*"
     continue-on-error: true
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Build wheels
+      - name: Build ${{ matrix.CIBW_BUILD }} wheels on ${{ matrix.os }}
         uses: pypa/cibuildwheel@v2.9.0
+        env:
+          CIBW_BUILD: ${{ matrix.CIBW_BUILD }}
 
       - uses: actions/upload-artifact@v2
         if: always()
@@ -78,10 +89,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: distribution
+          path: dist/
       - name: Setup Python
         uses: actions/setup-python@v4
-        with:
-          python-version: "3.11-dev"
       - name: Install tox
         run: |
           python -m pip install tox
