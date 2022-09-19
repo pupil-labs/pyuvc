@@ -21,7 +21,7 @@ IF UNAME_SYSNAME == "Windows":
         cdef struct timespec:
             time_t tv_sec
             long tv_nsec
-    cdef extern from "libusb/libusb.h":
+    cdef extern from "libusb.h":
         pass
 ELSE:
     from posix.time cimport timeval,timespec

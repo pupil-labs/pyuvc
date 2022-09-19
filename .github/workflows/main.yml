@@ -12,7 +12,7 @@ jobs:
     name: "Build ${{ matrix.CIBW_BUILD }} wheels on ${{ matrix.os }}"
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         CIBW_BUILD: ["*"]
         exclude:
           - os: ubuntu-latest
@@ -20,8 +20,9 @@ jobs:
         include:
           - os: ubuntu-latest
             CIBW_BUILD: "*manylinux*"
-          - os: ubuntu-latest
-            CIBW_BUILD: "*musllinux*"
+          # Disable musllinux
+          # - os: ubuntu-latest
+          #   CIBW_BUILD: "*musllinux*"
     continue-on-error: true
     runs-on: ${{ matrix.os }}
     steps:

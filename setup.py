@@ -1,3 +1,5 @@
+import json
+import pathlib
 import platform
 
 from setuptools import find_packages
@@ -11,10 +13,11 @@ if platform.system() == "Windows":
     cmake_args.append(f"-DPTHREADS_WIN_INCLUDE_DIR='{ptw.include_path}'")
     cmake_args.append(f"-DPTHREADS_WIN_IMPORT_LIB_PATH='{ptw.import_lib_path}'")
 
-    for var_name in ("LIBUSB_WIN_INCLUDE_DIR", "LIBUSB_WIN_IMPORT_LIB_PATH"):
-        var = os.environ.get(var_name)
-        if var is not None:
-            cmake_args.append(f"-D{var_name}='{var}'")
+    paths_loc = os.environ.get("DEPS_PATHS_LOC")
+    paths = json.loads(pathlib.Path(paths_loc).read_text())
+    for path_name, path_value in paths.items():
+        path_value = pathlib.Path(path_value).resolve()
+        cmake_args.append(f"-D{path_name}='{path_value}'")
 
     # The Ninja cmake generator will use mingw (gcc) on windows travis instances, but we
     # need to use msvc for compatibility. The easiest solution I found was to just use

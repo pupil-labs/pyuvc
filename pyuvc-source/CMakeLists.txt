@@ -4,6 +4,7 @@ project(pyuvc
     DESCRIPTION "Python bindings for the Pupil Labs libuvc library"
     HOMEPAGE_URL "https://github.com/pupil-labs/pyuvc"
 )
+cmake_policy(SET CMP0054 NEW)
 
 find_package(libuvc QUIET)
 
@@ -15,7 +16,7 @@ if(NOT ${libuvc_FOUND})
     elseif(UNIX)
         set(CMAKE_INSTALL_RPATH $ORIGIN/${CMAKE_INSTALL_LIBDIR})
     endif()
-else()
+elseif(UNIX)
     message(STATUS "Setting RPATH to ${libuvc_LIBRARY_DIRS}")
     set(CMAKE_INSTALL_RPATH ${libuvc_LIBRARY_DIRS})
 endif()
@@ -27,9 +28,31 @@ find_package(Cython REQUIRED)
 # find external cmake packages
 find_package(NumPy REQUIRED)
 
-find_package(PkgConfig)
-pkg_check_modules(libturbojpeg REQUIRED libturbojpeg)
-pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
+if(UNIX)
+    find_package(PkgConfig)
+    pkg_check_modules(libturbojpeg REQUIRED libturbojpeg)
+    pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
+else()
+    set(TURBOJPEG_WIN_INCLUDE_DIR "NOTSET" CACHE PATH "Path to the libturbojpeg include dir")
+    set(TURBOJPEG_WIN_IMPORT_LIB_PATH "NOTSET" CACHE FILEPATH "Path to the libturbojpeg import library")
+    
+    list(APPEND required_variables
+        TURBOJPEG_WIN_INCLUDE_DIR
+        TURBOJPEG_WIN_IMPORT_LIB_PATH
+    )
+    message(STATUS "Validating config:")
+
+    foreach(VAR IN LISTS required_variables)
+        if(${VAR} STREQUAL "NOTSET")
+        message(FATAL_ERROR "Required variable ${VAR} is not set!")
+        endif()
+    endforeach()
+
+    foreach(VAR IN LISTS required_variables)
+        message(STATUS "  ${VAR}: ${${VAR}}")
+    endforeach()
+    add_definitions("-D_TIMESPEC_DEFINED")
+endif()
 
 # Note: add_cython_target does not actually add a target, but fills a variable with the
 # corresponding compiled source file, e.g. here 'uvc_bindings.c'. If only the
@@ -47,13 +70,30 @@ python_extension_module(uvc_bindings)
 target_include_directories(uvc_bindings PRIVATE ".")
 
 # include numpy headers
-target_include_directories(uvc_bindings PRIVATE ${NumPy_INCLUDE_DIRS})
-target_include_directories(uvc_bindings PRIVATE ${libturbojpeg_INCLUDE_DIRS})
-target_include_directories(uvc_bindings PRIVATE ${LIBUSB_INCLUDE_DIRS})
+target_include_directories(
+    uvc_bindings
+    PRIVATE
+    ${NumPy_INCLUDE_DIRS}
+
+    # Unix
+    ${LIBUSB_INCLUDE_DIRS}
+    ${libturbojpeg_INCLUDE_DIRS}
+
+    # Windows vars
+    ${LIBUSB_WIN_INCLUDE_DIR}
+    ${TURBOJPEG_WIN_INCLUDE_DIR}
+)
 
 target_link_directories(uvc_bindings PRIVATE ${libturbojpeg_LIBRARY_DIRS})
 
-target_link_libraries(uvc_bindings PLLibUVC::uvc ${libturbojpeg_LIBRARIES})
+target_link_libraries(
+    uvc_bindings
+    PLLibUVC::uvc
+    ${libturbojpeg_LIBRARIES}
+
+    # Windows
+    ${TURBOJPEG_WIN_IMPORT_LIB_PATH}
+)
 
 # install here
 install(TARGETS uvc_bindings LIBRARY DESTINATION ".")
