@@ -5,6 +5,8 @@ if ($DEPS_TMP_PATH -eq $null) {
 
 rm _skbuild -Recurse -Confirm:$false
 
+choco install vcredist-all
+
 # libturbojpeg
 Set-Variable -Name "LTJ_VERSION" -Value "2.1.0"
 Set-Variable -Name "LTJ_URL" -Value "https://github.com/pupil-labs/pyndsi/wiki/libjpeg-turbo-${LTJ_VERSION}-vc64.exe"
