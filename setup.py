@@ -6,8 +6,10 @@ from setuptools import find_packages
 from skbuild import setup
 
 cmake_args = []
+cmake_args.append("-DUVC_DEBUGGING=ON")
 if platform.system() == "Windows":
     import os
+
     import pupil_pthreads_win as ptw
 
     cmake_args.append(f"-DPTHREADS_WIN_INCLUDE_DIR='{ptw.include_path}'")

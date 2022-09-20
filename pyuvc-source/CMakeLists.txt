@@ -9,6 +9,12 @@ cmake_policy(SET CMP0054 NEW)
 find_package(libuvc QUIET)
 
 if(NOT ${libuvc_FOUND})
+    option(UVC_DEBUGGING "Enable UVC debug logs" OFF)
+
+    if(${UVC_DEBUGGING})
+        SET(CMAKE_C_FLAGS "-g  -DUVC_DEBUGGING")
+    endif()
+
     add_subdirectory(../libuvc-source skbuild-libuvc)
 
     if(APPLE)
@@ -35,7 +41,7 @@ if(UNIX)
 else()
     set(TURBOJPEG_WIN_INCLUDE_DIR "NOTSET" CACHE PATH "Path to the libturbojpeg include dir")
     set(TURBOJPEG_WIN_IMPORT_LIB_PATH "NOTSET" CACHE FILEPATH "Path to the libturbojpeg import library")
-    
+
     list(APPEND required_variables
         TURBOJPEG_WIN_INCLUDE_DIR
         TURBOJPEG_WIN_IMPORT_LIB_PATH
@@ -44,13 +50,14 @@ else()
 
     foreach(VAR IN LISTS required_variables)
         if(${VAR} STREQUAL "NOTSET")
-        message(FATAL_ERROR "Required variable ${VAR} is not set!")
+            message(FATAL_ERROR "Required variable ${VAR} is not set!")
         endif()
     endforeach()
 
     foreach(VAR IN LISTS required_variables)
         message(STATUS "  ${VAR}: ${${VAR}}")
     endforeach()
+
     add_definitions("-D_TIMESPEC_DEFINED")
 endif()
 
