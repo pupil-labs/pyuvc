@@ -34,7 +34,7 @@ before-build = "pip install delvewheel pupil-pthreads-win"
 repair-wheel-command = "python scripts/repair-wheels-win.py tmp/dep_paths.json {wheel} {dest_dir}"
 
 [tool.cibuildwheel.macos]
-before-all = ["{project}/scripts/build-deps-unix.sh"]
+before-all = ["brew install automake", "{project}/scripts/build-deps-unix.sh"]
 
 [tool.cibuildwheel.linux]
 before-all = [
