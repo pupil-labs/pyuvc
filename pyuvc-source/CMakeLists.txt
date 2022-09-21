@@ -11,7 +11,7 @@ find_package(libuvc QUIET)
 if(NOT ${libuvc_FOUND})
     option(UVC_DEBUGGING "Enable UVC debug logs" OFF)
 
-    if(${UVC_DEBUGGING})
+    if(${UVC_DEBUGGING} AND UNIX)
         SET(CMAKE_C_FLAGS "-g  -DUVC_DEBUGGING")
     endif()
 
