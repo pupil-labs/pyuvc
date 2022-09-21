@@ -1,5 +1,6 @@
 param ($DEPS_TMP_PATH)
 if ($DEPS_TMP_PATH -eq $null) {
+    Write-Error "DEPS_TMP_PATH param not set"
     Exit -1
 }
 
@@ -46,7 +47,6 @@ $dep_paths = @{
     TURBOJPEG_WIN_DLL_SEARCH_PATH = "${LTJ_INSTALL_PATH}/bin"
     TURBOJPEG_WIN_INCLUDE_DIR     = "${LTJ_INSTALL_PATH}/include"
 }
-
 
 $dep_paths_json = $dep_paths | ConvertTo-Json
 $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
