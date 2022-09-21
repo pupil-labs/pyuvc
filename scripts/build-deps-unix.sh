@@ -1,8 +1,7 @@
 #!/bin/bash -xe
 
 # Build libusb master
-git clone --branch fix-1199 https://github.com/pupil-labs/libusb.git /tmp/libusb
-pushd /tmp/libusb
+pushd libusb-source
 ./bootstrap.sh
 ./configure
 make -j
