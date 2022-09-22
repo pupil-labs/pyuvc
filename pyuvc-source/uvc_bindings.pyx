@@ -139,6 +139,10 @@ cdef class Frame:
         if self.owns_uvc_frame:
             uvc.uvc_free_frame(self._uvc_frame)
 
+    @property
+    def data_fully_received(self):
+        return self._uvc_frame.width * self._uvc_frame.height == self._uvc_frame.data_bytes
+
     property width:
         def __get__(self):
             return self._uvc_frame.width
@@ -204,9 +208,11 @@ cdef class MJPEGFrame(Frame):
     cdef turbojpeg.tjhandle tj_context
     cdef unsigned char[:] _bgr_buffer, _gray_buffer,_yuv_buffer #we use numpy for memory management.
     cdef bint _yuv_converted, _bgr_converted
+    cdef bint _data_fully_received
     cdef public yuv_subsampling
 
     def __cinit__(self):
+        self._data_fully_received = True
         self._yuv_converted = False
         self._bgr_converted = False
         self.tj_context = NULL
@@ -357,9 +363,14 @@ cdef class MJPEGFrame(Frame):
                                              &self._yuv_buffer[0],
                                               0)
         if result == -1:
+            self._data_fully_received = False
             logger.warning('Turbojpeg jpeg2yuv: %s'%turbojpeg.tjGetErrorStr() )
         self.yuv_subsampling = jpegSubsamp
         self._yuv_converted = True
+
+    @property
+    def data_fully_received(self):
+        return self._data_fully_received
 
     def clear_caches(self):
         self._bgr_converted = False
