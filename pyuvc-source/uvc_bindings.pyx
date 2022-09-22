@@ -169,7 +169,7 @@ cdef class Frame:
                 frame[:self._uvc_frame.data_bytes] = view
             else:
                 view = <np.uint8_t[:self._uvc_frame.height*self._uvc_frame.width]>self._uvc_frame.data
-                frame = np.asarray(view)
+                frame = np.array(view, copy=True)
             return frame.reshape((self._uvc_frame.height, self._uvc_frame.width))
 
     @property
