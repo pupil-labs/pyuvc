@@ -6,10 +6,14 @@ project(pyuvc
 )
 cmake_policy(SET CMP0054 NEW)
 
+option(FORCE_LOCAL_LIBUVC_BUILD "Build local libuvc, even if an installed version was found" OFF)
+message(STATUS "FORCE_LOCAL_LIBUVC_BUILD=${FORCE_LOCAL_LIBUVC_BUILD}")
+
 find_package(libuvc QUIET)
 
 if(NOT ${libuvc_FOUND})
     option(UVC_DEBUGGING "Enable UVC debug logs" OFF)
+    message(STATUS "UVC_DEBUGGING=${UVC_DEBUGGING}")
 
     if(${UVC_DEBUGGING} AND UNIX)
         SET(CMAKE_C_FLAGS "-g  -DUVC_DEBUGGING")
