@@ -1,4 +1,5 @@
 import json
+import os
 import pathlib
 import platform
 
@@ -6,7 +7,11 @@ from setuptools import find_packages
 from skbuild import setup
 
 cmake_args = []
-cmake_args.append("-DUVC_DEBUGGING=ON")
+cmake_args.append(f"-DUVC_DEBUGGING={os.environ.get('UVC_DEBUGGING', 'OFF')}")
+cmake_args.append(
+    f"-DFORCE_LOCAL_LIBUVC_BUILD={os.environ.get('FORCE_LOCAL_LIBUVC_BUILD', 'OFF')}"
+)
+
 if platform.system() == "Windows":
     import os
 
