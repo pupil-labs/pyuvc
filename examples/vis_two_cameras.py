@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from typing import Iterable, NamedTuple, Optional
 
 import cv2
@@ -27,12 +28,16 @@ def main(camera_specs: Iterable[CameraSpec]):
 
     try:
         keep_running = True
+        last_update = time.perf_counter()
+
         while keep_running:
             for spec, cam in cameras.items():
                 try:
-                    frame = cam.get_frame(timeout=0.005)
+                    frame = cam.get_frame(timeout=0.001)
                 except TimeoutError:
                     pass
+                    # keep_running = False
+                    # break
                 except uvc.InitError as err:
                     logging.debug(f"Failed to init {spec}: {err}")
                     keep_running = False
@@ -40,11 +45,14 @@ def main(camera_specs: Iterable[CameraSpec]):
                 except uvc.StreamError as err:
                     logging.debug(f"Failed to get a frame for {spec}: {err}")
                 else:
-                    cv2.imshow(
-                        spec.name, frame.bgr if hasattr(frame, "bgr") else frame.gray
-                    )
-            if cv2.waitKey(1) & 0xFF == 27:
-                break
+                    data = frame.bgr if hasattr(frame, "bgr") else frame.gray
+                    if frame.data_fully_received:
+                        cv2.imshow(spec.name, data)
+
+            if (time.perf_counter() - last_update) > 1 / 60:
+                if cv2.waitKey(1) & 0xFF == 27:
+                    break
+                last_update = time.perf_counter()
 
     except KeyboardInterrupt:
         pass
@@ -86,22 +94,18 @@ if __name__ == "__main__":
     main(
         [
             CameraSpec(
-            # CameraSpec(
+                name=os.environ["CAM1"],
+                width=1600,
+                height=1200,
+                fps=30,
+                bandwidth_factor=1.6,
+            ),
+            CameraSpec(
+                name=os.environ["CAM2"],
                 width=384,
                 height=192,
                 fps=200,
                 bandwidth_factor=0,
-            ),
-            CameraSpec(
-            #     # bandwidth_factor=0.5,
-                #     width=1280,
-                #     height=720,
-                width=1600,
-                height=1200,
-                fps=30,
-                # bandwidth_factor=0,
-                # bandwidth_factor=1.08,
-                bandwidth_factor=1.6,
             ),
         ]
     )
