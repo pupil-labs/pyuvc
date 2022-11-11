@@ -9,9 +9,12 @@ cmake_policy(SET CMP0054 NEW)
 option(FORCE_LOCAL_LIBUVC_BUILD "Build local libuvc, even if an installed version was found" OFF)
 message(STATUS "FORCE_LOCAL_LIBUVC_BUILD=${FORCE_LOCAL_LIBUVC_BUILD}")
 
-find_package(libuvc QUIET)
+if(NOT FORCE_LOCAL_LIBUVC_BUILD)
+    message(STATUS "Looking for libuvc...")
+    find_package(libuvc)
+endif()
 
-if(NOT ${libuvc_FOUND})
+if(NOT libuvc_FOUND)
     option(UVC_DEBUGGING "Enable UVC debug logs" OFF)
     message(STATUS "UVC_DEBUGGING=${UVC_DEBUGGING}")
 
