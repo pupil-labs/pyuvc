@@ -856,53 +856,68 @@ cdef class Capture:
 
     @frame_size.setter
     def frame_size(self, size: Tuple[int, int]):
-        for mode in self.available_modes:
-            if size == (mode.width, mode.height):
-                if self.frame_rate is not None:
-                    #closest match for rate
-                    rates = [abs(m.fps-self.frame_rate) for m in self.available_modes]
-                    best_rate_idx = rates.index(min(rates))
-                    mode = self.available_modes[best_rate_idx]
-                self._configure_stream(mode)
-                return
-        raise ValueError("Frame size not suported.")
+        logger.debug(f"Changing resolution to target: {size}")
+        modes_with_target_res = [
+            mode for mode in self.available_modes if size == (mode.width, mode.height)
+        ]
+        if not modes_with_target_res:
+            raise ValueError(
+                f"Frame size {size} not suported. "
+                f"Available modes: {self.available_modes}"
+            )
+        if self.frame_rate is not None:
+            # closest match for previously selected rate
+            rates = [abs(m.fps-self.frame_rate) for m in modes_with_target_res]
+            best_rate_idx = rates.index(min(rates))
+            mode = modes_with_target_res[best_rate_idx]
+        else:
+            mode = modes_with_target_res[0]
+        self.frame_mode = mode
 
-    property frame_rate:
-        def __get__(self):
-            if self._active_mode:
-                return self._active_mode.fps
+    @property
+    def frame_rate(self):
+        if self._active_mode:
+            return self._active_mode.fps
 
-        def __set__(self, val):
-            if self._active_mode and self._active_mode.fps == val:
-                return
-            elif self._active_mode:
-                for mode in self.available_modes:
-                    if (
-                        mode.width == self._active_mode.width and
-                        mode.height == self._active_mode.height and
-                        mode.fps == val
-                    ):
-                        self.frame_mode = mode
-                        return
-                raise ValueError(
-                    f"No available mode with target frame rate {val} Hz found: "
-                    f"{self.available_modes}"
-                )
-            else:
-                logger.warning("Could not set frame rate. Set frame size first.")
+    @frame_rate.setter
+    def frame_rate(self, val):
+        if self._active_mode and self._active_mode.fps == val:
+            return
+        elif self._active_mode:
+            logger.debug(f"Changing frame rate to target: {val}")
+            for mode in self.available_modes:
+                if (
+                    mode.width == self._active_mode.width and
+                    mode.height == self._active_mode.height and
+                    mode.fps == val
+                ):
+                    self.frame_mode = mode
+                    return
+            raise ValueError(
+                f"No available mode with target frame rate {val} Hz found: "
+                f"{self.available_modes}"
+            )
+        else:
+            logger.warning("Could not set frame rate. Set frame size first.")
 
     property frame_sizes:
         def __get__(self):
-            return [(m.width, m.height) for m in self._camera_modes]
+            return tuple(sorted(set((m.width, m.height) for m in self.available_modes)))
 
     property frame_rates:
         def __get__(self):
+            frame_size = self.frame_size
             frame_rates = [
-                m.fps for m in self._camera_modes
-                if (m.width, m.height) == self.frame_size
+                m.fps for m in self.available_modes
+                if (m.width, m.height) == frame_size
             ]
             if not frame_rates:
                 raise ValueError("Please set frame_size before asking for rates.")
+            frame_rates = tuple(sorted(set(frame_rates)))
+            logger.debug(
+                f"Available frame rates at {frame_size[0]}x{frame_size[1]}: "
+                f"{frame_rates}"
+            )
             return frame_rates
 
 
@@ -917,7 +932,7 @@ cdef class Capture:
 
     @property
     def available_modes(self) -> Tuple[CameraMode,...]:
-        return tuple(mode for mode in self._camera_modes if mode.supported)
+        return tuple(sorted(mode for mode in self._camera_modes if mode.supported))
 
     @property
     def all_modes(self) -> Tuple[CameraMode,...]:
