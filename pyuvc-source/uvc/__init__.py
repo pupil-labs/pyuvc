@@ -5,7 +5,10 @@ try:
 except ImportError:
     from importlib_metadata import PackageNotFoundError, version
 
-from .uvc_bindings import (
+# .uvc_bindings expects `logger` to be present
+logger = logging.getLogger(__name__)
+
+from .uvc_bindings import (  # noqa: E402
     Capture,
     Device_List,
     InitError,
@@ -21,8 +24,6 @@ try:
 except PackageNotFoundError:
     # package is not installed
     pass
-
-logger = logging.getLogger(__name__)
 
 __all__ = [
     "__version__",
