@@ -66,6 +66,7 @@ pyuvc requires the following dependencies:
 Once the dependencies are installed, you can pip install the source tree::
 
    git clone https://github.com/pupil-labs/pyuvc --recursive
+   export FORCE_LOCAL_LIBUVC_BUILD=ON
    pip install ./pyuvc
 
 Linux
