@@ -104,6 +104,10 @@ class DeviceNotFoundError(InitError):
     def __init__(self, message):
         super().__init__(message)
 
+class InsufficientBandwidthError(InitError):
+    def __init__(self, message):
+        super().__init__(message)
+
 
 CameraMode = NamedTuple(
     "CameraMode",
@@ -643,12 +647,18 @@ cdef class Capture:
         cdef int status
         if not self._configured:
             self._configure_stream()
-        status = uvc.uvc_stream_open_ctrl(self.devh, &self.strmh, &self.ctrl, SHOULD_DETACH_KERNEL_DRIVER)
+        status = uvc.uvc_stream_open_ctrl(
+            self.devh, &self.strmh, &self.ctrl, SHOULD_DETACH_KERNEL_DRIVER
+        )
         if status != uvc.UVC_SUCCESS:
-            raise InitError("Can't open stream control: Error:'%s'."%uvc_error_codes[status])
+            raise InitError(
+                f"Can't open stream control - error: {uvc_error_codes[status]!r}"
+            )
         status = uvc.uvc_stream_start(self.strmh, NULL, NULL, self._bandwidth_factor, 0)
         if status != uvc.UVC_SUCCESS:
-            raise InitError("Can't start isochronous stream: Error:'%s'."%uvc_error_codes[status])
+            raise InsufficientBandwidthError(
+                f"Can't start isochronous stream - error: {uvc_error_codes[status]!r}."
+            )
         self._stream_on = 1
         logger.debug("Stream start.")
 
