@@ -21,15 +21,11 @@ IF UNAME_SYSNAME == "Windows":
         cdef struct timespec:
             time_t tv_sec
             long tv_nsec
-    cdef extern from "libusb/libusb.h":
-        pass
-ELIF UNAME_SYSNAME == "Darwin":
-    from posix.time cimport timeval,timespec
     cdef extern from "libusb.h":
         pass
 ELSE:
     from posix.time cimport timeval,timespec
-    cdef extern from "libusb-1.0/libusb.h":
+    cdef extern from "libusb.h":
         pass
 
 cdef extern from "Python.h":
@@ -117,8 +113,17 @@ cdef extern from  "libuvc/libuvc.h":
         UVC_FRAME_FORMAT_RGB
         UVC_FRAME_FORMAT_BGR
         UVC_FRAME_FORMAT_MJPEG
+        UVC_FRAME_FORMAT_H264
         UVC_FRAME_FORMAT_GRAY8
+        UVC_FRAME_FORMAT_GRAY16
         UVC_FRAME_FORMAT_BY8
+        UVC_FRAME_FORMAT_BA81
+        UVC_FRAME_FORMAT_SGRBG8
+        UVC_FRAME_FORMAT_SGBRG8
+        UVC_FRAME_FORMAT_SRGGB8
+        UVC_FRAME_FORMAT_SBGGR8
+        UVC_FRAME_FORMAT_NV12
+        UVC_FRAME_FORMAT_P010
         UVC_FRAME_FORMAT_COUNT
 
     enum:
@@ -177,18 +182,14 @@ cdef extern from  "libuvc/libuvc.h":
         uvc_vs_desc_subtype bDescriptorSubtype
         uint8_t bFormatIndex
         uint8_t bNumFrameDescriptors
-        #union {
-        #uint8_t guidFormat[16]
-        #uint8_t fourccFormat[4]
-        #}
-        #/** Format-specific data */
-        #union {
-        #/** BPP for uncompressed stream */
-        #uint8_t bBitsPerPixel
-        #/** Flags for JPEG stream */
-        #uint8_t bmFlags
-        #}
-        #/** Default {uvc_frame_desc} to choose given this format */
+        uint8_t guidFormat[16]
+        uint8_t fourccFormat[4]
+        # /** Format-specific data */
+        # /** BPP for uncompressed stream */
+        uint8_t bBitsPerPixel
+        # /** Flags for JPEG stream */
+        uint8_t bmFlags
+        # /** Default {uvc_frame_desc} to choose given this format */
         uint8_t bDefaultFrameIndex
         uint8_t bAspectRatioX
         uint8_t bAspectRatioY
@@ -356,7 +357,23 @@ cdef extern from  "libuvc/libuvc.h":
 
 
     cdef struct uvc_stream_ctrl:
-        pass
+        uint16_t bmHint
+        uint8_t bFormatIndex
+        uint8_t bFrameIndex
+        uint32_t dwFrameInterval
+        uint16_t wKeyFrameRate
+        uint16_t wPFrameRate
+        uint16_t wCompQuality
+        uint16_t wCompWindowSize
+        uint16_t wDelay
+        uint32_t dwMaxVideoFrameSize
+        uint32_t dwMaxPayloadTransferSize
+        uint32_t dwClockFrequency
+        uint8_t bmFramingInfo
+        uint8_t bPreferredVersion
+        uint8_t bMinVersion
+        uint8_t bMaxVersion
+        uint8_t bInterfaceNumber
     ctypedef uvc_stream_ctrl uvc_stream_ctrl_t
 
 
@@ -381,7 +398,7 @@ cdef extern from  "libuvc/libuvc.h":
     void uvc_unref_device(uvc_device_t *dev)
 
 
-    uvc_error_t uvc_open(uvc_device_t *dev,uvc_device_handle_t **devh)
+    uvc_error_t uvc_open(uvc_device_t *dev,uvc_device_handle_t **devh, int should_detach_kernel_driver)
     void uvc_close(uvc_device_handle_t *devh)
 
     uvc_device_t *uvc_get_device(uvc_device_handle_t *devh)
@@ -396,17 +413,18 @@ cdef extern from  "libuvc/libuvc.h":
     const uvc_extension_unit_t *uvc_get_extension_units(uvc_device_handle_t *devh)
 
 
-    uvc_error_t uvc_get_stream_ctrl_format_size( uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_format format, int width, int height, int fps)
+    uvc_frame_format uvc_frame_format_for_guid(uint8_t guid[16])
+    uvc_error_t uvc_get_stream_ctrl_format_size( uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_format format, int width, int height, int fps, int should_detach_kernel_driver)
 
     uvc_format_desc_t *uvc_get_format_descs(uvc_device_handle_t* )
 
-    uvc_error_t uvc_probe_stream_ctrl( uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl)
+    uvc_error_t uvc_probe_stream_ctrl( uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, int should_detach_kernel_driver)
 
-    uvc_error_t uvc_start_streaming( uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags)
+    uvc_error_t uvc_start_streaming( uvc_device_handle_t *devh, uvc_stream_ctrl_t *ctrl, uvc_frame_callback_t *cb, void *user_ptr, uint8_t flags, int should_detach_kernel_driver)
 
     void uvc_stop_streaming(uvc_device_handle_t *devh)
 
-    uvc_error_t uvc_stream_open_ctrl(uvc_device_handle_t *devh, uvc_stream_handle_t **strmh, uvc_stream_ctrl_t *ctrl)
+    uvc_error_t uvc_stream_open_ctrl(uvc_device_handle_t *devh, uvc_stream_handle_t **strmh, uvc_stream_ctrl_t *ctrl, int should_detach_kernel_driver)
     uvc_error_t set_uvc_stream_ctrl"uvc_stream_ctrl"(uvc_stream_handle_t *strmh, uvc_stream_ctrl_t *ctrl)
     uvc_error_t uvc_stream_start(uvc_stream_handle_t *strmh,uvc_frame_callback_t *cb,void *user_ptr,float bandwidth_factor, uint8_t flags)
     #uvc_error_t uvc_stream_start_iso(uvc_stream_handle_t *strmh, uvc_frame_callback_t *cb, void *user_ptr)
@@ -441,5 +459,3 @@ cdef inline void INT_TO_DW(int32_t i, uint8_t *p):
     p[1] = i >> 8
     p[2] = i >> 16
     p[3] = i >> 24
-
-

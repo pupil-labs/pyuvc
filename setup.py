@@ -1,83 +1,44 @@
-"""
-(*)~----------------------------------------------------------------------------------
- Pupil - eye tracking platform
- Copyright (C) 2012-2015  Pupil Labs
-
- Distributed under the terms of the CC BY-NC-SA License.
- License details are in the file license.txt, distributed as part of this software.
-----------------------------------------------------------------------------------~(*)
-"""
-import glob
+import json
 import os
+import pathlib
 import platform
 
-import numpy
-import pkgconfig
-from Cython.Build import cythonize
-from setuptools import Extension, setup
+from setuptools import find_packages
+from skbuild import setup
 
-extra_link_args = []
-plat_data_files = []
-extra_objects = []
-library_dirs = []
-include_dirs = [numpy.get_include()]
-if platform.system() == "Darwin":
-    configs = pkgconfig.parse("libturbojpeg libuvc")
-    libs = configs["libraries"]
-    include_dirs += configs["include_dirs"]
-    library_dirs += configs["library_dirs"]
-elif platform.system() == "Linux":
-    libs = ["rt", "uvc", "turbojpeg"]
-elif platform.system() == "Windows":
-    pack_dir = ""
-    uvc_dir = "C:\\work\\libuvc"
-    tj_dir = "C:\\work\\libjpeg-turbo-VC64"
-    usb_dir = "C:\\work\\libusb"
-    pthread_dir = "C:\\work\\pthreads-w32-2-9-1-release\\Pre-built.2\\dll\\x64"
+cmake_args = []
+cmake_args.append(f"-DUVC_DEBUGGING={os.environ.get('UVC_DEBUGGING', 'OFF')}")
+cmake_args.append(
+    f"-DFORCE_LOCAL_LIBUVC_BUILD={os.environ.get('FORCE_LOCAL_LIBUVC_BUILD', 'OFF')}"
+)
 
-    tj_lib = tj_dir + "\\lib\\turbojpeg.lib"
-    uvc_lib = uvc_dir + "\\bin\\Release\\uvc.lib"
+if platform.system() == "Windows":
+    import os
 
-    uvc_dll = uvc_dir + "\\bin\\Release\\uvc.dll"
-    usb_dll = usb_dir + "\\x64\Release\\dll\\libusb-1.0.dll"
-    tj_dll = tj_dir + "\\bin\\turbojpeg.dll"
-    jpg_dll = tj_dir + "\\bin\\jpeg62.dll"
-    pthr_dll = pthread_dir + "\\pthreadVC2.dll"
+    import pupil_pthreads_win as ptw
 
-    extra_objects = [tj_lib, uvc_lib]
-    libs = ["winmm"]
-    extra_link_args = []
-    include_dirs += [tj_dir + "\\include"]
-    include_dirs += [usb_dir] + [usb_dir + "\\libusb"]
-    include_dirs += [uvc_dir + "\\include"] + [uvc_dir + "\\bin\\include"]
+    cmake_args.append(f"-DPTHREADS_WIN_INCLUDE_DIR='{ptw.include_path}'")
+    cmake_args.append(f"-DPTHREADS_WIN_IMPORT_LIB_PATH='{ptw.import_lib_path}'")
 
-    plat_data_files = [
-        (pack_dir, [uvc_dll]),
-        (pack_dir, [usb_dll]),
-        (pack_dir, [tj_dll]),
-        (pack_dir, [jpg_dll]),
-        (pack_dir, [pthr_dll]),
-    ]
+    paths_loc = os.environ.get("DEPS_PATHS_LOC")
+    paths = json.loads(pathlib.Path(paths_loc).read_text())
+    for path_name, path_value in paths.items():
+        path_value = pathlib.Path(path_value).resolve()
+        cmake_args.append(f"-D{path_name}='{path_value}'")
 
+    # The Ninja cmake generator will use mingw (gcc) on windows travis instances, but we
+    # need to use msvc for compatibility. The easiest solution I found was to just use
+    # the vs cmake generator as it defaults to msvc.
+    cmake_args.append("-GVisual Studio 17 2022")
+    cmake_args.append("-DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=True")
 
-extensions = [
-    Extension(
-        name="uvc",
-        sources=["uvc.pyx"],
-        include_dirs=include_dirs,
-        library_dirs=library_dirs,
-        libraries=libs,
-        extra_link_args=extra_link_args,
-        extra_objects=extra_objects,
-        extra_compile_args=[],
-    )
-]
+pyuvc_source_folder = "pyuvc-source"
 
 setup(
-    name="uvc",
-    version="0.15.0",
-    description="Usb Video Class Device bindings with format conversion tool.",
-    install_requires=["numpy"],
-    ext_modules=cythonize(extensions),
-    data_files=plat_data_files,
+    packages=find_packages(where=pyuvc_source_folder),
+    package_dir={"": pyuvc_source_folder},
+    include_package_data=False,
+    cmake_source_dir=pyuvc_source_folder,
+    cmake_install_dir=pyuvc_source_folder + "/uvc",
+    cmake_args=cmake_args,
 )

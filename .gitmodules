@@ -1,0 +1,7 @@
+[submodule "libuvc-source"]
+	path = libuvc-source
+	url = https://github.com/pupil-labs/libuvc.git
+[submodule "libusb-source"]
+	path = libusb-source
+	url = https://github.com/pupil-labs/libusb.git
+	branch = pl-fixes

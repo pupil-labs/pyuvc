@@ -1,4 +1,4 @@
-from posix.time cimport timeval,timespec,clock_gettime,CLOCK_MONOTONIC
+from posix.time cimport CLOCK_MONOTONIC, clock_gettime, timespec, timeval
 
 
 cdef double get_sys_time_monotonic():

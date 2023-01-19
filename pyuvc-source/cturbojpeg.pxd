@@ -267,5 +267,3 @@ cdef extern from "turbojpeg.h":
     int tjDecompress(tjhandle handle, unsigned char *jpegBuf, long unsigned int jpegSize, unsigned char *dstBuf, int width, int pitch, int height, int pixelSize, int flags)
 
     int tjDecompressToYUV(tjhandle handle, unsigned char *jpegBuf, long unsigned int jpegSize, unsigned char *dstBuf, int flags)
-
-

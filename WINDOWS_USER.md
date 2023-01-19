@@ -1,7 +1,6 @@
-## How to prepare your system for uvc on Windows (8 and later)
+# Manual lisbUSBk driver installation
 
 PYUVC will only work with Python3.5+ 64bit!
-
 
 1. Download and install [libusbk 3.0.7.0] (https://sourceforge.net/projects/libusbk/files/libusbK-release/3.0.7.0/libusbK-3.0.7.0-setup.exe/download)
 
@@ -16,7 +15,3 @@ PYUVC will only work with Python3.5+ 64bit!
 6. Set the driver replacement to libusbK (v3.0.7.0) and click "Replace driver"
 
 7. Verify in device manager it is correctly replaced. Should be listed under a new category libusbK USB Devices
-
-8. download the latest wheel file from: https://github.com/pupil-labs/pyuvc/releases and do `pip install --upgrade <name of latest wheel file here>`
-
-At this point the uvc extension should be able to locate and stream from your web camera.

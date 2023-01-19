@@ -1,3 +1,50 @@
 [build-system]
-requires = ["setuptools", "wheel", "Cython", "numpy", "pkgconfig"]
+requires = [
+    "setuptools",
+    "setuptools_scm[toml]>=3.4.1",
+    "wheel",
+    "Cython",
+    "numpy",
+    "scikit-build",
+    "cmake",
+    "ninja;platform_system != \"Windows\"",
+    "pupil_pthreads_win; platform_system == \"Windows\"",
+]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+
+[tool.cibuildwheel]
+archs = ["native"]
+skip = "{cp,pp}27-* {cp,pp}35-* pp*"
+
+build-frontend = "build"
+
+test-command = "pytest {package}/tests -v"
+before-test = ""
+test-requires = ["pytest"]
+test-extras = []
+
+manylinux-x86_64-image = "manylinux2014"
+
+[tool.cibuildwheel.windows]
+environment = { DEPS_PATHS_LOC = "tmp/dep_paths.json" }
+before-all = "powershell scripts/download-deps-win.ps1 -DEPS_TMP_PATH tmp"
+before-build = "pip install delvewheel pupil-pthreads-win"
+repair-wheel-command = "python scripts/repair-wheels-win.py tmp/dep_paths.json {wheel} {dest_dir}"
+
+[tool.cibuildwheel.macos]
+before-all = ["brew install automake", "{project}/scripts/build-deps-unix.sh"]
+
+[tool.cibuildwheel.linux]
+before-all = [
+    "yum install -y libudev-devel",
+    "{project}/scripts/build-deps-manylinux.sh",
+]
+
+[[tool.cibuildwheel.overrides]]
+select = "*-musllinux*"
+before-all = [
+    "apk add eudev-dev nasm",
+    "{project}/scripts/build-deps-manylinux.sh",
+]
