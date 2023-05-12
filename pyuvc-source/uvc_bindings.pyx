@@ -767,7 +767,6 @@ cdef class Capture:
             avaible_controls_per_unit[guidExtensionCode] = extension_unit.bmControls
             extension_unit = extension_unit.next
 
-
         while input_terminal !=NULL:
             avaible_controls_per_unit['input_terminal'] = input_terminal.bmControls
             id_per_unit['input_terminal'] = input_terminal.bTerminalID
@@ -780,6 +779,9 @@ cdef class Capture:
 
         cdef Control control
         for std_ctl in standard_ctrl_units:
+            if std_ctl['unit'] not in avaible_controls_per_unit:
+                continue
+
             if std_ctl['bit_mask'] & avaible_controls_per_unit[std_ctl['unit']]:
 
                 logger.debug('Adding "%s" control.'%std_ctl['display_name'])
