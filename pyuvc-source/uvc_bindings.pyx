@@ -516,7 +516,7 @@ cdef class Capture:
     cdef dict _info
     cdef public list controls
 
-    def __cinit__(self,dev_uid):
+    def __cinit__(self, dev_uid, extended_controls):
         self.dev = NULL
         self.ctx = NULL
         self.devh = NULL
@@ -529,8 +529,7 @@ cdef class Capture:
         self.controls = []
         self._bandwidth_factor = 2.0
 
-    def __init__(self,dev_uid):
-
+    def __init__(self, dev_uid, extended_controls=None):
         #setup for jpeg converter
         self.tj_context = turbojpeg.tjInitDecompress()
 
@@ -539,9 +538,9 @@ cdef class Capture:
 
         self._init_device(dev_uid)
         self._enumerate_formats()
-        self._enumerate_controls()
+        self._enumerate_controls(extended_controls)
 
-    cdef _init_device(self,dev_uid):
+    cdef _init_device(self, dev_uid):
 
         ##first we find the appropriate dev handle
         cdef uvc.uvc_device_t ** dev_list
@@ -750,7 +749,9 @@ cdef class Capture:
         return frame
 
 
-    cdef _enumerate_controls(self):
+    cdef _enumerate_controls(self, extended_controls):
+        if extended_controls is None:
+            extended_controls = []
 
         cdef uvc.uvc_input_terminal_t *input_terminal = <uvc.uvc_input_terminal_t *>uvc.uvc_get_input_terminals(self.devh)
         cdef uvc.uvc_output_terminal_t *output_terminal = <uvc.uvc_output_terminal_t *>uvc.uvc_get_output_terminals(self.devh)
@@ -767,7 +768,6 @@ cdef class Capture:
             avaible_controls_per_unit[guidExtensionCode] = extension_unit.bmControls
             extension_unit = extension_unit.next
 
-
         while input_terminal !=NULL:
             avaible_controls_per_unit['input_terminal'] = input_terminal.bmControls
             id_per_unit['input_terminal'] = input_terminal.bTerminalID
@@ -779,19 +779,19 @@ cdef class Capture:
             processing_unit = processing_unit.next
 
         cdef Control control
-        for std_ctl in standard_ctrl_units:
-            if std_ctl['bit_mask'] & avaible_controls_per_unit[std_ctl['unit']]:
+        all_ctrl_units = standard_ctrl_units + extended_controls
+        for ctl_meta in all_ctrl_units:
+            if ctl_meta['bit_mask'] & avaible_controls_per_unit[ctl_meta['unit']]:
+                logger.debug('Adding "%s" control.'%ctl_meta['display_name'])
 
-                logger.debug('Adding "%s" control.'%std_ctl['display_name'])
-
-                std_ctl['unit_id'] = id_per_unit[std_ctl['unit']]
+                ctl_meta['unit_id'] = id_per_unit[ctl_meta['unit']]
                 try:
-                    control= Control(cap = self,**std_ctl)
+                    control= Control(cap = self,**ctl_meta)
                 except Exception as e:
                     import traceback
 
-                    logger.debug(f"Could not init {std_ctl['display_name']} control!")
-                    logger.debug(f"Control info: {std_ctl}")
+                    logger.debug(f"Could not init {ctl_meta['display_name']} control!")
+                    logger.debug(f"Control info: {ctl_meta}")
                     logger.debug(traceback.format_exc())
                 else:
                     self.controls.append(control)
