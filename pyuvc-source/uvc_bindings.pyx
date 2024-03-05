@@ -516,7 +516,7 @@ cdef class Capture:
     cdef dict _info
     cdef public list controls
 
-    def __cinit__(self, dev_uid, extended_controls):
+    def __cinit__(self, dev_uid, extended_controls=None):
         self.dev = NULL
         self.ctx = NULL
         self.devh = NULL

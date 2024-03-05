@@ -9,7 +9,7 @@ from skbuild import setup
 cmake_args = []
 cmake_args.append(f"-DUVC_DEBUGGING={os.environ.get('UVC_DEBUGGING', 'OFF')}")
 cmake_args.append(
-    f"-DFORCE_LOCAL_LIBUVC_BUILD={os.environ.get('FORCE_LOCAL_LIBUVC_BUILD', 'OFF')}"
+    f"-DFORCE_LOCAL_LIBUVC_BUILD={os.environ.get('FORCE_LOCAL_LIBUVC_BUILD', 'ON')}"
 )
 
 if platform.system() == "Windows":
