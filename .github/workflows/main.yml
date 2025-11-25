@@ -30,7 +30,7 @@ jobs:
         with:
           submodules: true
       - name: Build ${{ matrix.CIBW_BUILD }} wheels on ${{ matrix.os }}
-        uses: pypa/cibuildwheel@v2.9.0
+        uses: pypa/cibuildwheel@v3.3.0
         env:
           CIBW_BUILD: ${{ matrix.CIBW_BUILD }}
 
@@ -52,7 +52,7 @@ jobs:
           name: distribution
           path: dist/
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
       - name: Install tox
         run: |
           python -m pip install tox
