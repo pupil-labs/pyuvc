@@ -270,6 +270,7 @@ cdef extern from  "libuvc/libuvc.h":
 
     cdef struct uvc_device:
         pass
+
     ctypedef uvc_device uvc_device_t
 
     cdef struct uvc_device_handle:
@@ -398,6 +399,7 @@ cdef extern from  "libuvc/libuvc.h":
     void uvc_unref_device(uvc_device_t *dev)
 
 
+    uvc_error_t uvc_open_subdevice(uvc_device_t *dev,uvc_device_handle_t **devh, int should_detach_kernel_driver, int subdevice)
     uvc_error_t uvc_open(uvc_device_t *dev,uvc_device_handle_t **devh, int should_detach_kernel_driver)
     void uvc_close(uvc_device_handle_t *devh)
 
