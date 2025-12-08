@@ -516,7 +516,7 @@ cdef class Capture:
     cdef dict _info
     cdef public list controls
 
-    def __cinit__(self, dev_uid, extended_controls=None):
+    def __cinit__(self, dev_uid, extended_controls=None, subdevice=0):
         self.dev = NULL
         self.ctx = NULL
         self.devh = NULL
@@ -529,24 +529,25 @@ cdef class Capture:
         self.controls = []
         self._bandwidth_factor = 2.0
 
-    def __init__(self, dev_uid, extended_controls=None):
+    def __init__(self, dev_uid, extended_controls=None, subdevice=0):
         #setup for jpeg converter
         self.tj_context = turbojpeg.tjInitDecompress()
 
         if uvc.uvc_init(&self.ctx, NULL) != uvc.UVC_SUCCESS:
             raise InitError('Could not init libuvc')
 
-        self._init_device(dev_uid)
+        self._init_device(dev_uid, subdevice)
         self._enumerate_formats()
         self._enumerate_controls(extended_controls)
 
-    cdef _init_device(self, dev_uid):
+    cdef _init_device(self, dev_uid, subdevice=0):
 
         ##first we find the appropriate dev handle
         cdef uvc.uvc_device_t ** dev_list
         cdef uvc.uvc_device_descriptor_t *desc
         cdef int idx = 0
         cdef int error
+        cdef uvc.uvc_device_t* dev
         if uvc.uvc_get_device_list(self.ctx,&dev_list) !=uvc.UVC_SUCCESS:
             uvc.uvc_exit(self.ctx)
             raise InitError("could not get devices list.")
@@ -590,7 +591,7 @@ cdef class Capture:
 
         #once found we open the device
         self.dev = dev
-        error = uvc.uvc_open(self.dev, &self.devh, SHOULD_DETACH_KERNEL_DRIVER)
+        error = uvc.uvc_open_subdevice(self.dev, &self.devh, SHOULD_DETACH_KERNEL_DRIVER, <int>subdevice)
         if error != uvc.UVC_SUCCESS:
             raise OpenError(f"Could not open device. Error: {uvc_error_codes[error]}")
         logger.debug("Device '%s' opended."%dev_uid)
