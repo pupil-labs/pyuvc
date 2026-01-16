@@ -786,7 +786,7 @@ cdef class Capture:
 
                 ctl_meta['unit_id'] = id_per_unit[ctl_meta['unit']]
                 try:
-                    control= Control(cap = self,**ctl_meta)
+                    control = Control(cap = self, **ctl_meta)
                 except Exception as e:
                     import traceback
 
@@ -800,6 +800,11 @@ cdef class Capture:
         #uvc.PyEval_InitThreads()
         #uvc.uvc_set_status_callback(self.devh, on_status_update,<void*>self)
 
+    def add_vendor_control(self, ctl_meta):
+        control = Control(cap=self, **ctl_meta)
+        self.controls.append(control)
+
+        return control
 
     cdef _enumerate_formats(self):
         cdef uvc.uvc_format_desc_t *format_desc = <uvc.uvc_format_desc_t *>uvc.uvc_get_format_descs(self.devh)
