@@ -3,7 +3,7 @@
 # Build libusb master
 pushd libusb-source
 ./bootstrap.sh
-./configure
+./configure --prefix=$HOME/.local
 make -j
 make install
 popd
@@ -15,5 +15,6 @@ mkdir $BUILD_DIR
 pushd $BUILD_DIR
 cmake ..
 cmake --build .
+cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local .
 cmake --install .
 pushd
