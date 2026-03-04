@@ -1,3 +1,6 @@
+[project]
+python_requires = ">=3.8,<3.14"
+
 [build-system]
 requires = [
     "setuptools",
@@ -16,7 +19,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
 archs = ["native"]
-skip = "{cp,pp}27-* {cp,pp}35-* pp*"
+skip = "cp*t*"
 
 build-frontend = "build"
 
@@ -34,7 +37,8 @@ before-build = "pip install delvewheel pupil-pthreads-win"
 repair-wheel-command = "python scripts/repair-wheels-win.py tmp/dep_paths.json {wheel} {dest_dir}"
 
 [tool.cibuildwheel.macos]
-before-all = ["brew install automake", "{project}/scripts/build-deps-unix.sh"]
+environment = { MACOSX_DEPLOYMENT_TARGET = "15.0" }
+before-all = ["brew install automake libtool", "{project}/scripts/build-deps-unix.sh"]
 
 [tool.cibuildwheel.linux]
 before-all = [
