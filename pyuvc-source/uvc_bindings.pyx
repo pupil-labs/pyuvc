@@ -510,6 +510,7 @@ cdef class Capture:
     cdef bint _stream_on,_configured
     cdef uvc.uvc_stream_handle_t *strmh
     cdef float _bandwidth_factor
+    cdef object _clock_freq_override
 
     cdef object _active_mode
     cdef list _camera_modes
@@ -528,6 +529,7 @@ cdef class Capture:
         self._info = {}
         self.controls = []
         self._bandwidth_factor = 2.0
+        self._clock_freq_override = 0
 
     def __init__(self, dev_uid, extended_controls=None, subdevice=0):
         #setup for jpeg converter
@@ -647,6 +649,10 @@ cdef class Capture:
         cdef int status
         if not self._configured:
             self._configure_stream()
+
+        if self._clock_freq_override:
+            self.ctrl.dwClockFrequency = <uvc.uint32_t>self._clock_freq_override
+
         status = uvc.uvc_stream_open_ctrl(
             self.devh, &self.strmh, &self.ctrl, SHOULD_DETACH_KERNEL_DRIVER
         )
@@ -965,6 +971,13 @@ cdef class Capture:
                 self._bandwidth_factor = bandwidth_factor
                 if self._stream_on:
                     self._stop()
+
+    property clock_freq_override:
+        def __get__(self):
+            return self._clock_freq_override
+
+        def __set__(self, freq):
+            self._clock_freq_override = freq
 
 cdef void on_status_update(uvc.uvc_status_class status_class,
                         int event,
