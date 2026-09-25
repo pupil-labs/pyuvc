@@ -25,8 +25,8 @@ before-test = ""
 test-requires = ["pytest"]
 test-extras = []
 
-manylinux-x86_64-image = "manylinux2014"
-manylinux-aarch64-image = "manylinux2014"
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
 
 [tool.cibuildwheel.windows]
 environment = { DEPS_PATHS_LOC = "tmp/dep_paths.json" }
