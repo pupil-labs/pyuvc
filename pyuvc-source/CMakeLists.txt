@@ -22,6 +22,7 @@ if(NOT libuvc_FOUND)
         SET(CMAKE_C_FLAGS "-g  -DUVC_DEBUGGING")
     endif()
 
+    set(LIBUVC_BUILD_TESTING OFF)
     add_subdirectory(../libuvc-source skbuild-libuvc)
 
     if(APPLE)
